@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Студенти{% endblock %}
+{% block page_title %}Студенти{% endblock %}
+{% block page_subtitle %}Список усіх студентів системи{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{{ url_for('admin_add_student') }}" class="btn btn-primary">➕ Додати студента</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">👥 Усі студенти</div>
+        <span class="count-badge">{{ students | length }}</span>
+    </div>
+
+    {% if students %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Ім'я студента</th>
+                        <th>Група</th>
+                        <th>Логін</th>
+                        <th>Дії</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td class="row-num">{{ loop.index }}</td>
+                        <td>
+                            <div class="student-row">
+                                <div class="avatar">{{ s.full_name[0].upper() }}</div>
+                                <span class="student-fullname">{{ s.full_name }}</span>
+                            </div>
+                        </td>
+                        <td><span class="group-tag">{{ s.group_name }}</span></td>
+                        <td class="login-cell">{{ s.login }}</td>
+                        <td>
+                            <div class="action-row">
+                                <a href="{{ url_for('admin_edit_student', student_id=s.id) }}"
+                                   class="btn btn-secondary btn-sm">✏️ Редагувати</a>
+                                <a href="{{ url_for('admin_delete_student', user_id=s.user_id) }}"
+                                   class="btn btn-danger btn-sm"
+                                   onclick="return confirm('Видалити студента {{ s.full_name }}? Всі його практики та звіти також видаляться.')">
+                                   🗑 Видалити</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <div class="empty-title">Студентів ще немає</div>
+            <div class="empty-text">Натисніть "Додати студента" щоб додати першого</div>
+            <a href="{{ url_for('admin_add_student') }}" class="btn btn-primary" style="margin-top:16px;">
+                ➕ Додати студента
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .count-badge {
+        background: var(--accent-glow);
+        color: var(--accent-light);
+        border: 1px solid rgba(79,142,247,0.25);
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+    .row-num { color: var(--text-muted); font-size: 13px; width: 36px; }
+    .student-row { display: flex; align-items: center; gap: 10px; }
+    .avatar {
+        width: 34px; height: 34px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), #7c3aed);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .student-fullname { font-weight: 600; font-size: 14px; }
+    .group-tag {
+        background: rgba(79,142,247,0.1); color: var(--accent-light);
+        border: 1px solid rgba(79,142,247,0.2);
+        padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
+    }
+    .login-cell { font-size: 13px; color: var(--text-muted); font-family: monospace; }
+    .action-row { display: flex; gap: 8px; }
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-icon  { font-size: 48px; margin-bottom: 12px; }
+    .empty-title { font-family: 'Raleway', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .empty-text  { font-size: 14px; color: var(--text-muted); }
+</style>
+{% endblock %}

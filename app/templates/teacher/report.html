@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}Перевірка звіту{% endblock %}
+{% block page_title %}Перевірка звіту{% endblock %}
+{% block page_subtitle %}{{ practice.student_name }} — {{ practice.company_name }}{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary">← Назад</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Інфо про практику -->
+<div class="info-strip">
+    <div class="info-chip">
+        <span class="chip-label">Студент</span>
+        <span class="chip-val">{{ practice.student_name }}</span>
+    </div>
+    <div class="info-chip">
+        <span class="chip-label">Група</span>
+        <span class="chip-val">{{ practice.student_group }}</span>
+    </div>
+    <div class="info-chip">
+        <span class="chip-label">База практики</span>
+        <span class="chip-val">{{ practice.company_name }}</span>
+    </div>
+    <div class="info-chip">
+        <span class="chip-label">Тема</span>
+        <span class="chip-val">{{ practice.topic }}</span>
+    </div>
+    <div class="info-chip">
+        <span class="chip-label">Статус</span>
+        <span class="badge badge-{{ practice.status }}">
+            {% if practice.status == 'submitted' %}Звіт здано
+            {% elif practice.status == 'graded' %}Оцінено
+            {% else %}{{ practice.status }}{% endif %}
+        </span>
+    </div>
+</div>
+
+<div class="review-layout">
+
+    <!-- Ліва колонка: щоденник + звіт -->
+    <div class="left-col">
+
+        <!-- Щоденник -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📔 Щоденник практики</div>
+                <span class="entry-count">{{ diary | length }} записів</span>
+            </div>
+
+            {% if diary %}
+                <div class="diary-list">
+                    {% for entry in diary %}
+                        <div class="diary-item">
+                            <div class="diary-date-col">
+                                <div class="d-day">{{ entry.entry_date[8:10] }}</div>
+                                <div class="d-month">
+                                    {% set months = ['', 'Січ', 'Лют', 'Бер', 'Кві', 'Тра', 'Чер',
+                                                     'Лип', 'Сер', 'Вер', 'Жов', 'Лис', 'Гру'] %}
+                                    {{ months[entry.entry_date[5:7] | int] }}
+                                </div>
+                            </div>
+                            <div class="diary-line"></div>
+                            <div class="diary-text">{{ entry.content }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="mini-empty">📭 Студент ще не додав жодного запису в щоденник</div>
+            {% endif %}
+        </div>
+
+        <!-- Звіт -->
+        {% if report %}
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📄 Фінальний звіт</div>
+                    <span class="submitted-info">
+                        Здано: {{ report.submitted_at[:10] if report.submitted_at else '—' }}
+                    </span>
+                </div>
+                <div class="report-text">{{ report.content_text or 'Текст звіту відсутній.' }}</div>
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="mini-empty">📭 Студент ще не здав фінальний звіт</div>
+            </div>
+        {% endif %}
+
+    </div>
+
+    <!-- Права колонка: форма оцінювання -->
+    <div class="right-col">
+
+        {% if report and report.grade %}
+            <!-- Вже оцінено -->
+            <div class="card graded-card">
+                <div class="card-header">
+                    <div class="card-title">🏆 Оцінка виставлена</div>
+                </div>
+                <div class="grade-display">
+                    <div class="grade-big">{{ report.grade }}</div>
+                    <div class="grade-label">з 100 балів</div>
+                </div>
+                {% if report.teacher_comment %}
+                    <div class="comment-block">
+                        <div class="comment-lbl">Ваш коментар:</div>
+                        <div class="comment-txt">{{ report.teacher_comment }}</div>
+                    </div>
+                {% endif %}
+                <div class="graded-date">
+                    Оцінено: {{ report.graded_at[:16] if report.graded_at else '—' }}
+                </div>
+            </div>
+
+        {% elif report %}
+            <!-- Форма оцінювання -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">✏️ Виставити оцінку</div>
+                </div>
+
+                <form method="POST" action="{{ url_for('teacher_view_report', practice_id=practice.id) }}">
+                    <div class="form-group">
+                        <label class="form-label" for="grade">Оцінка (0–100) *</label>
+                        <input type="number" id="grade" name="grade" class="form-control"
+                               min="0" max="100" placeholder="85" required>
+                        <div class="grade-scale">
+                            <span class="scale-item bad">0–59 — незадовільно</span>
+                            <span class="scale-item ok">60–74 — задовільно</span>
+                            <span class="scale-item good">75–89 — добре</span>
+                            <span class="scale-item great">90–100 — відмінно</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="comment">Коментар (необов'язково)</label>
+                        <textarea id="comment" name="comment" class="form-control"
+                                  rows="5" placeholder="Залиште відгук для студента..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width:100%;"
+                            onclick="return confirm('Виставити оцінку? Після підтвердження змінити буде неможливо.')">
+                        🏆 Виставити оцінку
+                    </button>
+                </form>
+            </div>
+
+        {% else %}
+            <div class="card">
+                <div class="pending-box">
+                    <div class="pending-icon">⏳</div>
+                    <div class="pending-title">Студент ще не здав звіт</div>
+                    <div class="pending-text">Оцінювання стане доступним після здачі</div>
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+    /* Смуга інформації */
+    .info-strip {
+        display: flex; flex-wrap: wrap; gap: 10px;
+        margin-bottom: 20px;
+    }
+    .info-chip {
+        display: flex; flex-direction: column; gap: 2px;
+        background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 8px; padding: 10px 14px;
+    }
+    .chip-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); }
+    .chip-val   { font-size: 13px; font-weight: 600; color: var(--text); }
+
+    /* Двоколонна розкладка */
+    .review-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+    .left-col, .right-col { display: flex; flex-direction: column; }
+
+    /* Щоденник */
+    .entry-count {
+        font-size: 12px; font-weight: 700; color: var(--text-muted);
+        background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+        padding: 3px 10px; border-radius: 20px;
+    }
+    .diary-list { display: flex; flex-direction: column; }
+    .diary-item { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .diary-item:last-child { border-bottom: none; }
+    .diary-date-col { text-align: center; min-width: 40px; flex-shrink: 0; }
+    .d-day   { font-family: 'Raleway', sans-serif; font-size: 22px; font-weight: 800; color: var(--accent-light); line-height: 1; }
+    .d-month { font-size: 10px; color: var(--text-muted); font-weight: 700; }
+    .diary-line { width: 2px; background: var(--border); align-self: stretch; flex-shrink: 0; }
+    .diary-text { font-size: 13px; color: var(--text); line-height: 1.7; white-space: pre-wrap; }
+
+    /* Звіт */
+    .submitted-info { font-size: 12px; color: var(--text-muted); }
+    .report-text {
+        font-size: 14px; color: var(--text); line-height: 1.8;
+        white-space: pre-wrap; background: rgba(255,255,255,0.02);
+        border: 1px solid var(--border); border-radius: 8px; padding: 16px;
+        max-height: 400px; overflow-y: auto;
+    }
+
+    /* Оцінка */
+    .graded-card { border-color: rgba(52,211,153,0.3); }
+    .grade-display { text-align: center; padding: 20px 0; }
+    .grade-big {
+        font-family: 'Raleway', sans-serif; font-size: 56px; font-weight: 800;
+        color: #34d399; line-height: 1;
+    }
+    .grade-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    .comment-block {
+        background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+        border-radius: 8px; padding: 12px; margin: 14px 0 10px;
+    }
+    .comment-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 5px; }
+    .comment-txt { font-size: 13px; color: var(--text); line-height: 1.6; }
+    .graded-date { font-size: 12px; color: var(--text-muted); }
+
+    /* Шкала оцінок */
+    .grade-scale { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+    .scale-item { font-size: 11px; padding: 3px 8px; border-radius: 4px; }
+    .scale-item.bad   { background: rgba(248,113,113,0.1); color: #f87171; }
+    .scale-item.ok    { background: rgba(251,191,36,0.1);  color: #fbbf24; }
+    .scale-item.good  { background: rgba(96,165,250,0.1);  color: #60a5fa; }
+    .scale-item.great { background: rgba(52,211,153,0.1);  color: #34d399; }
+
+    /* Очікування */
+    .mini-empty { padding: 30px; text-align: center; font-size: 13px; color: var(--text-muted); }
+    .pending-box { text-align: center; padding: 40px 20px; }
+    .pending-icon { font-size: 36px; margin-bottom: 10px; }
+    .pending-title { font-family: 'Raleway', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .pending-text  { font-size: 13px; color: var(--text-muted); }
+
+    @media (max-width: 900px) { .review-layout { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
