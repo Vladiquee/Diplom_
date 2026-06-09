@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+
+{% block title %}Звіт з практики{% endblock %}
+
+{% block page_title %}Звіт з практики{% endblock %}
+{% block page_subtitle %}{{ practice.topic }}{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">
+        ← Назад
+    </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Прогрес здачі -->
+<div class="progress-steps">
+    <div class="step {% if practice.status in ['in_progress', 'assigned', 'submitted', 'graded'] %}step-done{% endif %}">
+        <div class="step-circle">✓</div>
+        <div class="step-label">Практику призначено</div>
+    </div>
+    <div class="step-line {% if practice.status in ['submitted', 'graded'] %}line-done{% endif %}"></div>
+    <div class="step {% if practice.status in ['submitted', 'graded'] %}step-done{% elif practice.status == 'in_progress' %}step-active{% endif %}">
+        <div class="step-circle">
+            {% if practice.status in ['submitted', 'graded'] %}✓{% else %}2{% endif %}
+        </div>
+        <div class="step-label">Здача звіту</div>
+    </div>
+    <div class="step-line {% if practice.status == 'graded' %}line-done{% endif %}"></div>
+    <div class="step {% if practice.status == 'graded' %}step-done{% endif %}">
+        <div class="step-circle">
+            {% if practice.status == 'graded' %}✓{% else %}3{% endif %}
+        </div>
+        <div class="step-label">Оцінювання</div>
+    </div>
+</div>
+
+{% if report and report.grade %}
+    <!-- ====== ЗВІТ ОЦІНЕНО ====== -->
+    <div class="card graded-card">
+        <div class="card-header">
+            <div class="card-title">🏆 Результат практики</div>
+        </div>
+        <div class="grade-result">
+            <div class="grade-circle-big">
+                <div class="grade-num">{{ report.grade }}</div>
+                <div class="grade-sub">з 100</div>
+            </div>
+            <div class="grade-info">
+                <div class="grade-status-label">Практику успішно завершено!</div>
+                {% if report.teacher_comment %}
+                    <div class="comment-block">
+                        <div class="comment-label">💬 Коментар керівника:</div>
+                        <div class="comment-text">{{ report.teacher_comment }}</div>
+                    </div>
+                {% endif %}
+                <div class="grade-date">
+                    Оцінено: {{ report.graded_at[:16] if report.graded_at else '—' }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Текст здданого звіту (тільки для перегляду) -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">📄 Мій звіт</div>
+            <span class="submitted-badge">✅ Здано {{ report.submitted_at[:10] if report.submitted_at else '' }}</span>
+        </div>
+        <div class="report-readonly">{{ report.content_text }}</div>
+    </div>
+
+{% elif report %}
+    <!-- ====== ЗВІТ НА ПЕРЕВІРЦІ ====== -->
+    <div class="card pending-card">
+        <div class="pending-body">
+            <div class="pending-icon">⏳</div>
+            <div>
+                <div class="pending-title">Звіт здано — очікуйте перевірки</div>
+                <div class="pending-date">
+                    Здано: {{ report.submitted_at[:16] if report.submitted_at else '—' }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Текст звіту (тільки для перегляду) -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">📄 Мій звіт</div>
+            <span class="submitted-badge">📤 На перевірці</span>
+        </div>
+        <div class="report-readonly">{{ report.content_text }}</div>
+    </div>
+
+    <!-- Кнопка оновити -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">✏️ Оновити звіт</div>
+        </div>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+            Якщо потрібно — можна оновити звіт до перевірки керівником.
+        </p>
+        <form method="POST" action="{{ url_for('student_report') }}">
+            <div class="form-group">
+                <label class="form-label" for="content_text">Текст звіту</label>
+                <textarea
+                    id="content_text"
+                    name="content_text"
+                    class="form-control"
+                    rows="12"
+                    placeholder="Введіть текст звіту..."
+                    required
+                >{{ report.content_text }}</textarea>
+            </div>
+            <div style="text-align:right;">
+                <button type="submit" class="btn btn-primary">
+                    💾 Оновити звіт
+                </button>
+            </div>
+        </form>
+    </div>
+
+{% else %}
+    <!-- ====== ФОРМА ЗДАЧІ ЗВІТУ ====== -->
+
+    <!-- Підказка зі структурою -->
+    <div class="card hint-card">
+        <div class="card-header">
+            <div class="card-title">💡 Рекомендована структура звіту</div>
+        </div>
+        <div class="hint-grid">
+            <div class="hint-item">
+                <div class="hint-num">1</div>
+                <div>
+                    <div class="hint-title">Загальні відомості</div>
+                    <div class="hint-desc">Місце практики, терміни, тема завдання</div>
+                </div>
+            </div>
+            <div class="hint-item">
+                <div class="hint-num">2</div>
+                <div>
+                    <div class="hint-title">Виконана робота</div>
+                    <div class="hint-desc">Що конкретно ви зробили під час практики</div>
+                </div>
+            </div>
+            <div class="hint-item">
+                <div class="hint-num">3</div>
+                <div>
+                    <div class="hint-title">Технології та інструменти</div>
+                    <div class="hint-desc">Які мови, програми, бази даних використовували</div>
+                </div>
+            </div>
+            <div class="hint-item">
+                <div class="hint-num">4</div>
+                <div>
+                    <div class="hint-title">Висновки</div>
+                    <div class="hint-desc">Що навчилися, які навички отримали</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Форма -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">📝 Написати звіт</div>
+        </div>
+
+        <form method="POST" action="{{ url_for('student_report') }}">
+            <div class="form-group">
+                <label class="form-label" for="content_text">Текст звіту</label>
+                <textarea
+                    id="content_text"
+                    name="content_text"
+                    class="form-control report-textarea"
+                    rows="16"
+                    placeholder="Розпочніть написання звіту тут...
+
+1. Загальні відомості
+Я проходив(ла) практику у закладі...
+
+2. Виконана робота
+Під час практики я...
+
+3. Технології та інструменти
+У роботі використовувалися...
+
+4. Висновки
+В результаті проходження практики я..."
+                    required
+                ></textarea>
+            </div>
+
+            <div class="submit-row">
+                <div class="submit-warning">
+                    ⚠️ Після здачі звіт буде надіслано на перевірку керівнику
+                </div>
+                <button type="submit" class="btn btn-primary btn-submit"
+                        onclick="return confirm('Здати звіт на перевірку? Переконайтеся що все готово.')">
+                    📤 Здати звіт
+                </button>
+            </div>
+        </form>
+    </div>
+{% endif %}
+
+<style>
+    /* Прогрес-кроки */
+    .progress-steps {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 28px;
+        gap: 0;
+    }
+
+    .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .step-circle {
+        width: 40px; height: 40px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-muted);
+        background: var(--bg-card);
+        transition: all 0.3s;
+    }
+
+    .step-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-align: center;
+        max-width: 80px;
+    }
+
+    .step.step-done .step-circle {
+        background: rgba(52,211,153,0.15);
+        border-color: #34d399;
+        color: #34d399;
+    }
+
+    .step.step-done .step-label { color: #34d399; }
+
+    .step.step-active .step-circle {
+        background: var(--accent-glow);
+        border-color: var(--accent);
+        color: var(--accent-light);
+        box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .step.step-active .step-label { color: var(--accent-light); }
+
+    .step-line {
+        flex: 1;
+        height: 2px;
+        background: var(--border);
+        min-width: 60px;
+        max-width: 120px;
+        margin-bottom: 22px;
+        transition: background 0.3s;
+    }
+
+    .step-line.line-done { background: #34d399; }
+
+    /* Оцінка */
+    .graded-card { border-color: rgba(52,211,153,0.3); }
+
+    .grade-result {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+    }
+
+    .grade-circle-big {
+        width: 110px; height: 110px;
+        border-radius: 50%;
+        background: rgba(52,211,153,0.1);
+        border: 3px solid #34d399;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .grade-num {
+        font-family: 'Raleway', sans-serif;
+        font-size: 38px;
+        font-weight: 800;
+        color: #34d399;
+        line-height: 1;
+    }
+
+    .grade-sub { font-size: 12px; color: var(--text-muted); }
+
+    .grade-status-label {
+        font-family: 'Raleway', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: #34d399;
+        margin-bottom: 14px;
+    }
+
+    .comment-block {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 12px;
+    }
+
+    .comment-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+    }
+
+    .comment-text { font-size: 14px; color: var(--text); line-height: 1.6; }
+
+    .grade-date { font-size: 12px; color: var(--text-muted); }
+
+    /* На перевірці */
+    .pending-card { border-color: rgba(79,142,247,0.3); }
+
+    .pending-body {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .pending-icon { font-size: 36px; }
+
+    .pending-title {
+        font-family: 'Raleway', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--accent-light);
+    }
+
+    .pending-date { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Бейдж "здано" */
+    .submitted-badge {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--success);
+        background: rgba(52,211,153,0.1);
+        border: 1px solid rgba(52,211,153,0.25);
+        padding: 4px 12px;
+        border-radius: 20px;
+    }
+
+    /* Текст звіту (readonly) */
+    .report-readonly {
+        font-size: 14px;
+        color: var(--text);
+        line-height: 1.8;
+        white-space: pre-wrap;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 18px;
+    }
+
+    /* Підказки */
+    .hint-card { border-color: rgba(251,191,36,0.2); }
+
+    .hint-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    .hint-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px;
+        background: rgba(255,255,255,0.02);
+        border-radius: 8px;
+        border: 1px solid var(--border);
+    }
+
+    .hint-num {
+        width: 26px; height: 26px;
+        border-radius: 50%;
+        background: rgba(251,191,36,0.15);
+        border: 1px solid rgba(251,191,36,0.3);
+        color: #fbbf24;
+        font-size: 13px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .hint-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .hint-desc  { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+    /* Textarea звіту */
+    .report-textarea { min-height: 320px; font-size: 14px; line-height: 1.7; }
+
+    /* Рядок здачі */
+    .submit-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 8px;
+        gap: 16px;
+    }
+
+    .submit-warning {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .btn-submit { padding: 11px 28px; font-size: 14px; }
+
+    @media (max-width: 600px) {
+        .hint-grid { grid-template-columns: 1fr; }
+        .grade-result { flex-direction: column; }
+        .submit-row { flex-direction: column; align-items: flex-start; }
+        .progress-steps { gap: 0; }
+        .step-line { min-width: 30px; }
+    }
+</style>
+
+{% endblock %}

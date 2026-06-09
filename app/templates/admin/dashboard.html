@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}Дашборд — Адміністратор{% endblock %}
+
+{% block page_title %}Панель адміністратора{% endblock %}
+{% block page_subtitle %}Загальна статистика системи{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{{ url_for('admin_add_student') }}" class="btn btn-primary">
+        ➕ Додати студента
+    </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Статистика -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.total_students }}</div>
+        <div class="stat-label">👥 Студентів</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.total_practices }}</div>
+        <div class="stat-label">📋 Практик</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.total_companies }}</div>
+        <div class="stat-label">🏢 Баз практики</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.total_teachers }}</div>
+        <div class="stat-label">👨‍🏫 Керівників</div>
+    </div>
+</div>
+
+<!-- Статуси практик -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">📊 Статуси практик</div>
+    </div>
+
+    <div class="status-grid">
+        <div class="status-item status-assigned">
+            <div class="status-count">{{ stats.assigned }}</div>
+            <div class="status-label">Призначено</div>
+        </div>
+        <div class="status-item status-in_progress">
+            <div class="status-count">{{ stats.in_progress }}</div>
+            <div class="status-label">В процесі</div>
+        </div>
+        <div class="status-item status-submitted">
+            <div class="status-count">{{ stats.submitted }}</div>
+            <div class="status-label">Звіт здано</div>
+        </div>
+        <div class="status-item status-graded">
+            <div class="status-count">{{ stats.graded }}</div>
+            <div class="status-label">Оцінено</div>
+        </div>
+    </div>
+</div>
+
+<!-- Швидкі дії -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">⚡ Швидкі дії</div>
+    </div>
+    <div class="quick-actions">
+        <a href="{{ url_for('admin_add_student') }}" class="quick-btn">
+            <span class="quick-icon">👤</span>
+            <span class="quick-text">Додати студента</span>
+        </a>
+        <a href="{{ url_for('admin_add_company') }}" class="quick-btn">
+            <span class="quick-icon">🏢</span>
+            <span class="quick-text">Додати базу практики</span>
+        </a>
+        <a href="{{ url_for('admin_add_practice') }}" class="quick-btn">
+            <span class="quick-icon">📋</span>
+            <span class="quick-text">Призначити практику</span>
+        </a>
+        <a href="{{ url_for('admin_add_teacher') }}" class="quick-btn">
+            <span class="quick-icon">👨‍🏫</span>
+            <span class="quick-text">Додати керівника</span>
+        </a>
+        <a href="{{ url_for('admin_students') }}" class="quick-btn">
+            <span class="quick-icon">👥</span>
+            <span class="quick-text">Всі студенти</span>
+        </a>
+        <a href="{{ url_for('admin_practices') }}" class="quick-btn">
+            <span class="quick-icon">📊</span>
+            <span class="quick-text">Всі практики</span>
+        </a>
+    </div>
+</div>
+
+<style>
+    .status-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+    }
+
+    .status-item {
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .status-count {
+        font-family: 'Raleway', sans-serif;
+        font-size: 36px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .status-label {
+        font-size: 12px;
+        font-weight: 700;
+        margin-top: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-assigned   { background: rgba(251,191,36,0.1);  color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+    .status-in_progress{ background: rgba(96,165,250,0.1);  color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
+    .status-submitted  { background: rgba(79,142,247,0.1);  color: #7aaeff; border: 1px solid rgba(79,142,247,0.2); }
+    .status-graded     { background: rgba(52,211,153,0.1);  color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .quick-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 10px;
+        color: var(--text);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .quick-btn:hover {
+        background: var(--accent-glow);
+        border-color: var(--accent);
+        color: var(--accent-light);
+        transform: translateY(-2px);
+    }
+
+    .quick-icon { font-size: 22px; }
+
+    .quick-text {
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .status-grid { grid-template-columns: repeat(2, 1fr); }
+        .quick-actions { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+
+{% endblock %}
