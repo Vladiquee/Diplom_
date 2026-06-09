@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Дашборд — Керівник практики{% endblock %}
+
+{% block page_title %}Мої студенти{% endblock %}
+{% block page_subtitle %}Список студентів та їхніх практик{% endblock %}
+
+{% block content %}
+
+<!-- Статистика керівника -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ practices | length }}</div>
+        <div class="stat-label">👥 Всього студентів</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ practices | selectattr('status', 'equalto', 'submitted') | list | length }}</div>
+        <div class="stat-label">📄 Очікують перевірки</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ practices | selectattr('status', 'equalto', 'graded') | list | length }}</div>
+        <div class="stat-label">✅ Вже оцінено</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ practices | selectattr('status', 'in', ['assigned', 'in_progress']) | list | length }}</div>
+        <div class="stat-label">⏳ В процесі</div>
+    </div>
+</div>
+
+<!-- Таблиця студентів -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">📋 Список практик</div>
+    </div>
+
+    {% if practices %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Студент</th>
+                        <th>Група</th>
+                        <th>База практики</th>
+                        <th>Термін</th>
+                        <th>Статус</th>
+                        <th>Дії</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in practices %}
+                    <tr>
+                        <td>
+                            <div class="student-name">{{ p.student_name }}</div>
+                        </td>
+                        <td>
+                            <span class="group-badge">{{ p.student_group }}</span>
+                        </td>
+                        <td>{{ p.company_name }}</td>
+                        <td class="date-cell">
+                            {{ p.start_date }} — {{ p.end_date }}
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ p.status }}">
+                                {% if p.status == 'assigned' %}Призначено
+                                {% elif p.status == 'in_progress' %}В процесі
+                                {% elif p.status == 'submitted' %}Звіт здано
+                                {% elif p.status == 'graded' %}Оцінено
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if p.status == 'submitted' or p.status == 'graded' %}
+                                <a href="{{ url_for('teacher_view_report', practice_id=p.id) }}"
+                                   class="btn btn-primary btn-sm">
+                                    {% if p.status == 'submitted' %}✏️ Перевірити
+                                    {% else %}👁 Переглянути{% endif %}
+                                </a>
+                            {% else %}
+                                <span class="no-action">Очікування звіту</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <div class="empty-title">Студентів ще немає</div>
+            <div class="empty-text">Адміністратор ще не призначив вам студентів</div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .student-name {
+        font-weight: 700;
+        color: var(--text);
+        font-size: 14px;
+    }
+
+    .group-badge {
+        background: rgba(79,142,247,0.12);
+        color: var(--accent-light);
+        border: 1px solid rgba(79,142,247,0.2);
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .date-cell {
+        font-size: 13px;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+
+    .no-action {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-style: italic;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+    .empty-title {
+        font-family: 'Raleway', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 6px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: var(--text-muted);
+    }
+</style>
+
+{% endblock %}

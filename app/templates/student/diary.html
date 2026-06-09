@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+
+{% block title %}Щоденник практики{% endblock %}
+
+{% block page_title %}Щоденник практики{% endblock %}
+{% block page_subtitle %}{{ practice.topic }}{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">
+        ← Назад
+    </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Форма додавання запису -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">✏️ Новий запис</div>
+    </div>
+
+    <form method="POST" action="{{ url_for('student_diary') }}">
+        <div class="form-row">
+            <div class="form-group" style="flex: 0 0 200px;">
+                <label class="form-label" for="entry_date">Дата</label>
+                <input
+                    type="date"
+                    id="entry_date"
+                    name="entry_date"
+                    class="form-control"
+                    value="{{ today }}"
+                    required
+                >
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label" for="content">Що зроблено сьогодні</label>
+                <textarea
+                    id="content"
+                    name="content"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Опишіть що ви робили під час практики сьогодні..."
+                    required
+                ></textarea>
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <button type="submit" class="btn btn-primary">
+                ➕ Додати запис
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Список записів -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">📔 Мої записи</div>
+        <span class="entries-count">{{ entries | length }} записів</span>
+    </div>
+
+    {% if entries %}
+        <div class="entries-list">
+            {% for entry in entries %}
+                <div class="entry-item">
+                    <div class="entry-date-col">
+                        <div class="entry-day">{{ entry.entry_date[8:10] }}</div>
+                        <div class="entry-month-year">
+                            {% set months = ['', 'Січ', 'Лют', 'Бер', 'Кві', 'Тра', 'Чер',
+                                             'Лип', 'Сер', 'Вер', 'Жов', 'Лис', 'Гру'] %}
+                            {{ months[entry.entry_date[5:7] | int] }}<br>
+                            {{ entry.entry_date[0:4] }}
+                        </div>
+                    </div>
+                    <div class="entry-line"></div>
+                    <div class="entry-body">
+                        <div class="entry-content">{{ entry.content }}</div>
+                        <div class="entry-meta">
+                            Додано: {{ entry.created_at[:16] if entry.created_at else '' }}
+                        </div>
+                    </div>
+                    <div class="entry-actions">
+                        <a href="{{ url_for('student_delete_diary_entry', entry_id=entry.id) }}"
+                           class="btn btn-danger btn-sm"
+                           onclick="return confirm('Видалити цей запис?')">
+                            🗑
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <div class="empty-title">Записів ще немає</div>
+            <div class="empty-text">Додайте перший запис про сьогоднішній день практики</div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .form-row {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 0;
+    }
+
+    .form-row .form-group { margin-bottom: 16px; }
+
+    /* Лічильник записів */
+    .entries-count {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        padding: 4px 12px;
+        border-radius: 20px;
+    }
+
+    /* Список записів */
+    .entries-list { display: flex; flex-direction: column; gap: 0; }
+
+    .entry-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border);
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateX(-8px); }
+        to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .entry-item:last-child { border-bottom: none; }
+
+    /* Стовпець з датою */
+    .entry-date-col {
+        text-align: center;
+        min-width: 52px;
+        flex-shrink: 0;
+    }
+
+    .entry-day {
+        font-family: 'Raleway', sans-serif;
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--accent-light);
+        line-height: 1;
+    }
+
+    .entry-month-year {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-top: 2px;
+        line-height: 1.4;
+    }
+
+    /* Вертикальна лінія між датою і текстом */
+    .entry-line {
+        width: 2px;
+        background: var(--border);
+        align-self: stretch;
+        border-radius: 2px;
+        flex-shrink: 0;
+    }
+
+    /* Тіло запису */
+    .entry-body { flex: 1; }
+
+    .entry-content {
+        font-size: 14px;
+        color: var(--text);
+        line-height: 1.7;
+        white-space: pre-wrap;
+    }
+
+    .entry-meta {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 8px;
+    }
+
+    /* Кнопки дій */
+    .entry-actions { flex-shrink: 0; }
+
+    /* Порожній стан */
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-icon  { font-size: 48px; margin-bottom: 12px; }
+    .empty-title {
+        font-family: 'Raleway', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+    .empty-text  { font-size: 14px; color: var(--text-muted); }
+
+    @media (max-width: 600px) {
+        .form-row { flex-direction: column; }
+        .form-row .form-group { flex: 1 !important; }
+    }
+</style>
+
+{% endblock %}
