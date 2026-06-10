@@ -2,9 +2,6 @@ from functools import wraps
 from flask import session, redirect, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash as werkzeug_check
 
-# ============================================================
-# ХЕШУВАННЯ ПАРОЛІВ
-# ============================================================
 
 def hash_password(password):
     """
@@ -30,9 +27,6 @@ def check_password(password, password_hash):
     return werkzeug_check(password_hash, password)
 
 
-# ============================================================
-# РОБОТА З СЕСІЄЮ (хто зараз залогінений)
-# ============================================================
 
 def login_user(user):
     """
@@ -64,11 +58,6 @@ def is_logged_in():
     return 'user_id' in session
 
 
-# ============================================================
-# ДЕКОРАТОРИ — ЗАХИСТ СТОРІНОК
-# ============================================================
-# Декоратор — це @функція яку ставиш над маршрутом.
-# Вона виконується ПЕРЕД тим як відкрити сторінку.
 
 def login_required(f):
     """
