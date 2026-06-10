@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Керівники практики{% endblock %}
+{% block page_title %}Керівники практики{% endblock %}
+{% block page_subtitle %}Список усіх керівників у системі{% endblock %}
+
+{% block topbar_actions %}
+    <a href="{{ url_for('admin_add_teacher') }}" class="btn btn-primary">➕ Додати керівника</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">👨‍🏫 Усі керівники</div>
+        <span class="count-badge">{{ teachers | length }}</span>
+    </div>
+
+    {% if teachers %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Ім'я керівника</th>
+                        <th>Логін</th>
+                        <th>Дії</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in teachers %}
+                    <tr>
+                        <td class="row-num">{{ loop.index }}</td>
+                        <td>
+                            <div class="teacher-row">
+                                <div class="avatar">{{ t.full_name[0].upper() }}</div>
+                                <span class="teacher-name">{{ t.full_name }}</span>
+                            </div>
+                        </td>
+                        <td class="login-cell">{{ t.login }}</td>
+                        <td>
+                            <div class="action-row">
+                                <a href="{{ url_for('admin_edit_credentials', user_id=t.user_id) }}"
+                                   class="btn btn-secondary btn-sm">🔑 Логін/Пароль</a>
+                                <a href="{{ url_for('admin_delete_teacher', user_id=t.user_id) }}"
+                                   class="btn btn-danger btn-sm"
+                                   onclick="return confirm('Видалити керівника {{ t.full_name }}?')">
+                                   🗑</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">👨‍🏫</div>
+            <div class="empty-title">Керівників ще немає</div>
+            <div class="empty-text">Додайте першого керівника практики</div>
+            <a href="{{ url_for('admin_add_teacher') }}" class="btn btn-primary" style="margin-top:16px;">
+                ➕ Додати керівника
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .count-badge {
+        background: var(--accent-glow); color: var(--accent-light);
+        border: 1px solid rgba(79,142,247,0.25);
+        padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: 700;
+    }
+    .row-num { color: var(--text-muted); font-size: 13px; width: 36px; }
+    .teacher-row { display: flex; align-items: center; gap: 10px; }
+    .avatar {
+        width: 34px; height: 34px; border-radius: 50%;
+        background: linear-gradient(135deg, #34d399, #059669);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .teacher-name { font-weight: 600; font-size: 14px; }
+    .login-cell { font-size: 13px; color: var(--text-muted); font-family: monospace; }
+    .action-row { display: flex; gap: 8px; }
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-icon  { font-size: 48px; margin-bottom: 12px; }
+    .empty-title { font-family: 'Raleway', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .empty-text  { font-size: 14px; color: var(--text-muted); }
+</style>
+{% endblock %}

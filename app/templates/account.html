@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Мій акаунт{% endblock %}
+{% block page_title %}Мій акаунт{% endblock %}
+{% block page_subtitle %}Зміна логіну та пароля{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+
+    <!-- Поточні дані -->
+    <div class="card current-card">
+        <div class="card-header">
+            <div class="card-title">👤 Мій профіль</div>
+        </div>
+        <div class="current-info">
+            <div class="ci-avatar">{{ user.login[0].upper() }}</div>
+            <div class="ci-login">{{ user.login }}</div>
+            <div class="ci-role">
+                {% if user.role == 'admin' %}⚙️ Адміністратор
+                {% elif user.role == 'teacher' %}👨‍🏫 Керівник практики
+                {% elif user.role == 'student' %}👤 Студент
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Форма -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">🔑 Змінити дані входу</div>
+        </div>
+
+        <form method="POST" action="{{ url_for('my_account') }}">
+
+            <div class="form-group">
+                <label class="form-label" for="login">Логін</label>
+                <input type="text" id="login" name="login"
+                       class="form-control"
+                       value="{{ user.login }}"
+                       autocomplete="off">
+                <div class="form-hint">Залиш без змін якщо не хочеш міняти логін</div>
+            </div>
+
+            <div class="form-divider"><span>Зміна пароля</span></div>
+
+            <div class="form-group">
+                <label class="form-label" for="old_password">Поточний пароль</label>
+                <div class="pass-wrap">
+                    <input type="password" id="old_password" name="old_password"
+                           class="form-control"
+                           placeholder="Введи поточний пароль..."
+                           autocomplete="current-password">
+                    <button type="button" class="pass-eye" onclick="togglePass('old_password')">👁</button>
+                </div>
+                <div class="form-hint">Потрібен тільки якщо змінюєш пароль</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="new_password">Новий пароль</label>
+                <div class="pass-wrap">
+                    <input type="password" id="new_password" name="new_password"
+                           class="form-control"
+                           placeholder="Введи новий пароль..."
+                           autocomplete="new-password">
+                    <button type="button" class="pass-eye" onclick="togglePass('new_password')">👁</button>
+                </div>
+                <div class="form-hint">Залиш порожнім якщо не змінюєш пароль</div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">💾 Зберегти зміни</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Підказка -->
+    <div class="hint-card">
+        <div class="hint-icon">💡</div>
+        <div class="hint-title">Поради з безпеки</div>
+        <div class="hint-list">
+            <div class="hint-item">✅ Мінімум 8 символів</div>
+            <div class="hint-item">✅ Поєднуй букви і цифри</div>
+            <div class="hint-item">✅ Не передавай пароль іншим</div>
+            <div class="hint-item">❌ Не використовуй прості паролі</div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .settings-layout {
+        display: grid;
+        grid-template-columns: 200px 1fr 220px;
+        gap: 20px;
+        align-items: start;
+    }
+
+    .current-card { text-align: center; }
+    .current-info { padding: 8px 0; }
+
+    .ci-avatar {
+        width: 60px; height: 60px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), #7c3aed);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px; font-weight: 700; color: #fff;
+        margin: 0 auto 12px;
+    }
+    .ci-login {
+        font-family: monospace; font-size: 16px; font-weight: 700;
+        color: var(--text); margin-bottom: 6px;
+    }
+    .ci-role { font-size: 12px; color: var(--text-muted); }
+
+    .form-divider {
+        display: flex; align-items: center; gap: 12px;
+        margin: 8px 0 20px; color: var(--text-muted);
+        font-size: 12px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.6px;
+    }
+    .form-divider::before, .form-divider::after {
+        content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+
+    .pass-wrap { position: relative; }
+    .pass-wrap .form-control { padding-right: 44px; }
+    .pass-eye {
+        position: absolute; right: 12px; top: 50%;
+        transform: translateY(-50%);
+        background: none; border: none; cursor: pointer;
+        font-size: 16px; color: var(--text-muted);
+    }
+    .pass-eye:hover { color: var(--text); }
+
+    .form-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+
+    .hint-card {
+        background: var(--bg-card);
+        border: 1px solid rgba(52,211,153,0.2);
+        border-radius: 12px; padding: 20px;
+    }
+    .hint-icon { font-size: 24px; margin-bottom: 8px; }
+    .hint-title {
+        font-family: 'Raleway', sans-serif;
+        font-size: 14px; font-weight: 700; margin-bottom: 12px;
+    }
+    .hint-item {
+        font-size: 12px; color: var(--text-muted);
+        margin-bottom: 8px; line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+        .settings-layout { grid-template-columns: 1fr; }
+    }
+</style>
+
+<script>
+function togglePass(id) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+</script>
+{% endblock %}
