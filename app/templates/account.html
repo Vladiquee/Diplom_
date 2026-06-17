@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}Мій акаунт{% endblock %}
+{% block page_title %}Мій акаунт{% endblock %}
+{% block page_subtitle %}Аватарка, логін та пароль{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+
+    <!-- Ліва колонка: аватарка + профіль -->
+    <div class="left-col">
+
+        <!-- Аватарка -->
+        <div class="card avatar-card">
+            <div class="card-header">
+                <div class="card-title">🖼 Аватарка</div>
+            </div>
+
+            <div class="avatar-preview">
+                {% if user.avatar %}
+                    <img src="{{ url_for('static', filename='avatars/' + user.avatar) }}"
+                         alt="Аватарка" class="avatar-img" id="avatarPreview">
+                {% else %}
+                    <div class="avatar-placeholder" id="avatarPlaceholder">
+                        {{ user.login[0].upper() }}
+                    </div>
+                    <img src="" alt="" class="avatar-img" id="avatarPreview" style="display:none;">
+                {% endif %}
+            </div>
+
+            <form method="POST" action="{{ url_for('upload_avatar') }}"
+                  enctype="multipart/form-data" class="avatar-form">
+                <label class="avatar-upload-btn" for="avatarInput">
+                    📁 Обрати фото
+                </label>
+                <input type="file" id="avatarInput" name="avatar"
+                       accept="image/*" style="display:none;"
+                       onchange="previewAvatar(this)">
+                <button type="submit" class="btn btn-primary avatar-save-btn" id="avatarSaveBtn" style="display:none;">
+                    ✅ Зберегти
+                </button>
+            </form>
+
+            <div class="avatar-hint">PNG, JPG, GIF або WEBP · до 16 МБ</div>
+
+            <div class="ci-login">{{ user.login }}</div>
+            <div class="ci-role">
+                {% if user.role == 'admin' %}⚙️ Адміністратор
+                {% elif user.role == 'teacher' %}👨‍🏫 Керівник практики
+                {% elif user.role == 'student' %}👤 Студент
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Права колонка: форма зміни даних -->
+    <div class="right-col">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🔑 Змінити дані входу</div>
+            </div>
+
+            <form method="POST" action="{{ url_for('my_account') }}">
+
+                <div class="form-group">
+                    <label class="form-label" for="login">Логін</label>
+                    <input type="text" id="login" name="login"
+                           class="form-control"
+                           value="{{ user.login }}"
+                           autocomplete="off">
+                    <div class="form-hint">Залиш без змін якщо не хочеш міняти логін</div>
+                </div>
+
+                <div class="form-divider"><span>Зміна пароля</span></div>
+
+                <div class="form-group">
+                    <label class="form-label" for="old_password">Поточний пароль</label>
+                    <div class="pass-wrap">
+                        <input type="password" id="old_password" name="old_password"
+                               class="form-control"
+                               placeholder="Введи поточний пароль..."
+                               autocomplete="current-password">
+                        <button type="button" class="pass-eye" onclick="togglePass('old_password')">👁</button>
+                    </div>
+                    <div class="form-hint">Потрібен тільки якщо змінюєш пароль</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="new_password">Новий пароль</label>
+                    <div class="pass-wrap">
+                        <input type="password" id="new_password" name="new_password"
+                               class="form-control"
+                               placeholder="Введи новий пароль..."
+                               autocomplete="new-password">
+                        <button type="button" class="pass-eye" onclick="togglePass('new_password')">👁</button>
+                    </div>
+                    <div class="form-hint">Залиш порожнім якщо не змінюєш пароль</div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">💾 Зберегти зміни</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Підказка -->
+        <div class="hint-card">
+            <div class="hint-icon">💡</div>
+            <div class="hint-title">Поради з безпеки</div>
+            <div class="hint-list">
+                <div class="hint-item">✅ Мінімум 8 символів</div>
+                <div class="hint-item">✅ Поєднуй букви і цифри</div>
+                <div class="hint-item">✅ Не передавай пароль іншим</div>
+                <div class="hint-item">❌ Не використовуй прості паролі</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .settings-layout {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 20px;
+        align-items: start;
+    }
+
+    .left-col, .right-col { display: flex; flex-direction: column; gap: 20px; }
+
+    /* Аватарка */
+    .avatar-card { text-align: center; }
+
+    .avatar-preview {
+        width: 120px; height: 120px;
+        border-radius: 50%;
+        margin: 0 auto 16px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .avatar-img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid var(--accent);
+        box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .avatar-placeholder {
+        width: 120px; height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), #7c3aed);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 48px; font-weight: 800; color: #fff;
+        border: 3px solid var(--accent);
+        box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .avatar-form { margin-bottom: 8px; }
+
+    .avatar-upload-btn {
+        display: inline-block;
+        padding: 8px 16px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 13px; font-weight: 700;
+        color: var(--text); cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 8px;
+    }
+
+    .avatar-upload-btn:hover {
+        background: var(--accent-glow);
+        border-color: var(--accent);
+        color: var(--accent-light);
+    }
+
+    .avatar-save-btn {
+        display: block;
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    .avatar-hint {
+        font-size: 11px; color: var(--text-muted);
+        margin-bottom: 14px;
+    }
+
+    .ci-login {
+        font-family: monospace; font-size: 15px; font-weight: 700;
+        color: var(--text); margin-bottom: 4px;
+    }
+
+    .ci-role { font-size: 12px; color: var(--text-muted); }
+
+    /* Форма */
+    .form-divider {
+        display: flex; align-items: center; gap: 12px;
+        margin: 8px 0 20px; color: var(--text-muted);
+        font-size: 12px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.6px;
+    }
+    .form-divider::before, .form-divider::after {
+        content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+
+    .pass-wrap { position: relative; }
+    .pass-wrap .form-control { padding-right: 44px; }
+    .pass-eye {
+        position: absolute; right: 12px; top: 50%;
+        transform: translateY(-50%);
+        background: none; border: none; cursor: pointer;
+        font-size: 16px; color: var(--text-muted);
+    }
+    .pass-eye:hover { color: var(--text); }
+
+    .form-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+
+    /* Підказка */
+    .hint-card {
+        background: var(--bg-card);
+        border: 1px solid rgba(52,211,153,0.2);
+        border-radius: 12px; padding: 20px;
+    }
+    .hint-icon { font-size: 24px; margin-bottom: 8px; }
+    .hint-title {
+        font-family: 'Raleway', sans-serif;
+        font-size: 14px; font-weight: 700; margin-bottom: 12px;
+    }
+    .hint-item {
+        font-size: 12px; color: var(--text-muted);
+        margin-bottom: 8px; line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+        .settings-layout { grid-template-columns: 1fr; }
+    }
+</style>
+
+<script>
+function togglePass(id) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('avatarPreview');
+            const placeholder = document.getElementById('avatarPlaceholder');
+            const saveBtn = document.getElementById('avatarSaveBtn');
+
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+            saveBtn.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+{% endblock %}

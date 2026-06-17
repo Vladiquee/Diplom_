@@ -67,7 +67,15 @@
             <div class="card-title">📄 Мій звіт</div>
             <span class="submitted-badge">✅ Здано {{ report.submitted_at[:10] if report.submitted_at else '' }}</span>
         </div>
-        <div class="report-readonly">{{ report.content_text }}</div>
+        {% if report.content_text %}
+            <div class="report-readonly">{{ report.content_text }}</div>
+        {% endif %}
+        {% if report.file_path %}
+            <a href="{{ url_for('download_report_file', practice_id=practice.id) }}"
+               class="file-download-link">
+                📎 Завантажити прикріплений файл
+            </a>
+        {% endif %}
     </div>
 
 {% elif report %}
@@ -90,7 +98,15 @@
             <div class="card-title">📄 Мій звіт</div>
             <span class="submitted-badge">📤 На перевірці</span>
         </div>
-        <div class="report-readonly">{{ report.content_text }}</div>
+        {% if report.content_text %}
+            <div class="report-readonly">{{ report.content_text }}</div>
+        {% endif %}
+        {% if report.file_path %}
+            <a href="{{ url_for('download_report_file', practice_id=practice.id) }}"
+               class="file-download-link">
+                📎 Завантажити прикріплений файл
+            </a>
+        {% endif %}
     </div>
 
     <!-- Кнопка оновити -->
@@ -101,7 +117,7 @@
         <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
             Якщо потрібно — можна оновити звіт до перевірки керівником.
         </p>
-        <form method="POST" action="{{ url_for('student_report') }}">
+        <form method="POST" action="{{ url_for('student_report') }}" enctype="multipart/form-data">
             <div class="form-group">
                 <label class="form-label" for="content_text">Текст звіту</label>
                 <textarea
@@ -110,8 +126,19 @@
                     class="form-control"
                     rows="12"
                     placeholder="Введіть текст звіту..."
-                    required
                 >{{ report.content_text }}</textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Прикріпити / замінити файл</label>
+                <label class="file-upload" for="report_file_upd">
+                    <span class="file-icon">📎</span>
+                    <span class="file-text" id="fileTextUpd">
+                        {% if report.file_path %}Файл прикріплено — обрати інший{% else %}Обрати файл звіту{% endif %}
+                    </span>
+                </label>
+                <input type="file" id="report_file_upd" name="report_file"
+                       accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,.rar"
+                       style="display:none;" onchange="showFileNameUpd(this)">
             </div>
             <div style="text-align:right;">
                 <button type="submit" class="btn btn-primary">
@@ -167,7 +194,7 @@
             <div class="card-title">📝 Написати звіт</div>
         </div>
 
-        <form method="POST" action="{{ url_for('student_report') }}">
+        <form method="POST" action="{{ url_for('student_report') }}" enctype="multipart/form-data">
             <div class="form-group">
                 <label class="form-label" for="content_text">Текст звіту</label>
                 <textarea
@@ -188,8 +215,20 @@
 
 4. Висновки
 В результаті проходження практики я..."
-                    required
                 ></textarea>
+            </div>
+
+            <!-- Прикріплення файлу -->
+            <div class="form-group">
+                <label class="form-label">Прикріпити файл (необов'язково)</label>
+                <label class="file-upload" for="report_file">
+                    <span class="file-icon">📎</span>
+                    <span class="file-text" id="fileText">Обрати файл звіту (PDF, Word, ZIP...)</span>
+                </label>
+                <input type="file" id="report_file" name="report_file"
+                       accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,.rar"
+                       style="display:none;" onchange="showFileName(this)">
+                <div class="form-hint">Можна здати тільки текст, тільки файл, або разом</div>
             </div>
 
             <div class="submit-row">
@@ -438,6 +477,62 @@
         .progress-steps { gap: 0; }
         .step-line { min-width: 30px; }
     }
+
+    /* Завантаження файлу */
+    .file-upload {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        background: rgba(255,255,255,0.03);
+        border: 1px dashed var(--border);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .file-upload:hover {
+        border-color: var(--accent);
+        background: var(--accent-glow);
+    }
+    .file-icon { font-size: 20px; }
+    .file-text { font-size: 14px; color: var(--text-muted); font-weight: 600; }
+
+    .file-download-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 14px;
+        padding: 10px 18px;
+        background: var(--accent-glow);
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        color: var(--accent-light);
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .file-download-link:hover {
+        background: var(--accent);
+        color: #fff;
+    }
 </style>
+
+<script>
+    function showFileName(input) {
+        const txt = document.getElementById('fileText');
+        if (input.files && input.files[0]) {
+            txt.textContent = '✅ ' + input.files[0].name;
+            txt.style.color = 'var(--success)';
+        }
+    }
+    function showFileNameUpd(input) {
+        const txt = document.getElementById('fileTextUpd');
+        if (input.files && input.files[0]) {
+            txt.textContent = '✅ ' + input.files[0].name;
+            txt.style.color = 'var(--success)';
+        }
+    }
+</script>
 
 {% endblock %}

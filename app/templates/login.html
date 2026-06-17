@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вхід — Система обліку практик</title>
+    <title>Вхід — EduSync</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@700;800&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,6 +21,20 @@
             --text:        #e2e8f0;
             --text-muted:  #7a8599;
             --border:      rgba(255,255,255,0.07);
+        }
+
+        [data-theme="light"] {
+            --bg:          #f4f6fb;
+            --bg-card:     #ffffff;
+            --accent:      #4f8ef7;
+            --accent-glow: rgba(79, 142, 247, 0.15);
+            --success:     #059669;
+            --danger:      #dc2626;
+            --warning:     #d97706;
+            --info:        #2563eb;
+            --text:        #1e293b;
+            --text-muted:  #64748b;
+            --border:      rgba(0,0,0,0.09);
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -119,17 +133,20 @@
 
         .login-header h1 {
             font-family: 'Raleway', sans-serif;
-            font-size: 24px;
+            font-size: 32px;
             font-weight: 800;
             color: var(--text);
-            line-height: 1.2;
+            line-height: 1.1;
+            letter-spacing: 1px;
         }
 
-        .login-header p {
+        .login-subtitle {
             font-size: 13px;
             color: var(--text-muted);
-            margin-top: 6px;
+            margin-top: 4px;
         }
+
+        
 
         /* ---- Картка форми ---- */
         .login-card {
@@ -261,9 +278,44 @@
             font-size: 12px;
             color: var(--text-muted);
         }
+
+        /* Перемикач теми у кутку */
+        .theme-toggle-login {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.2s;
+        }
+        .theme-toggle-login:hover {
+            transform: translateY(-2px) scale(1.05);
+            border-color: var(--accent);
+        }
     </style>
+    <script>
+        (function() {
+            if (localStorage.getItem('edusync-theme') === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
 </head>
 <body>
+
+    <!-- Перемикач теми -->
+    <button class="theme-toggle-login" onclick="toggleTheme()" title="Змінити тему" id="themeToggle">
+        <span id="themeIcon">🌙</span>
+    </button>
 
     <!-- Фонові фігури -->
     <div class="bg-shapes">
@@ -277,8 +329,9 @@
 
         <div class="login-header">
             <div class="logo-icon">🎓</div>
-            <h1>Система обліку практик</h1>
-            <p>Полтавський політехнічний ліцей</p>
+            <h1>EduSync</h1>
+            <p class="login-subtitle">Система обліку практик</p>
+            
         </div>
 
         <div class="login-card">
@@ -348,10 +401,31 @@
         </div>
 
         <div class="login-footer">
-            Полтавський політехнічний ліцей &nbsp;·&nbsp; 2026
+            <strong style="color:var(--accent-light)">EduSync</strong> &nbsp;·&nbsp; 2026
         </div>
 
     </div>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isLight = html.getAttribute('data-theme') === 'light';
+            if (isLight) {
+                html.removeAttribute('data-theme');
+                localStorage.setItem('edusync-theme', 'dark');
+            } else {
+                html.setAttribute('data-theme', 'light');
+                localStorage.setItem('edusync-theme', 'light');
+            }
+            updateThemeIcon();
+        }
+        function updateThemeIcon() {
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            const icon = document.getElementById('themeIcon');
+            if (icon) icon.textContent = isLight ? '☀️' : '🌙';
+        }
+        updateThemeIcon();
+    </script>
 
 </body>
 </html>

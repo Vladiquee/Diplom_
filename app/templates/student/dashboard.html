@@ -90,7 +90,7 @@
             <div class="grade-body">
                 <div class="grade-circle">
                     <span class="grade-number">{{ report.grade }}</span>
-                    <span class="grade-max">/100</span>
+                    <span class="grade-max">балів</span>
                 </div>
                 <div class="grade-details">
                     {% if report.teacher_comment %}
@@ -230,15 +230,16 @@
     }
 
     .grade-circle {
-        width: 90px; height: 90px;
+        width: 100px; height: 100px;
         border-radius: 50%;
         background: rgba(52,211,153,0.1);
         border: 3px solid #34d399;
         display: flex;
-        align-items: baseline;
+        flex-direction: column;
+        align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        gap: 2px;
+        line-height: 1;
     }
 
     .grade-number {
@@ -246,11 +247,13 @@
         font-size: 32px;
         font-weight: 800;
         color: #34d399;
+        line-height: 1;
     }
 
     .grade-max {
-        font-size: 14px;
+        font-size: 11px;
         color: var(--text-muted);
+        margin-top: 3px;
     }
 
     .grade-comment-label {

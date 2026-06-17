@@ -82,6 +82,10 @@
                     </span>
                 </div>
                 <div class="report-text">{{ report.content_text or 'Текст звіту відсутній.' }}</div>
+                {% if report.file_path %}
+                    <a href="{{ url_for('download_report_file', practice_id=practice.id) }}"
+                       class="file-dl">📎 Завантажити прикріплений файл</a>
+                {% endif %}
             </div>
         {% else %}
             <div class="card">
@@ -196,6 +200,16 @@
 
     /* Звіт */
     .submitted-info { font-size: 12px; color: var(--text-muted); }
+    .file-dl {
+        display: inline-flex; align-items: center; gap: 8px;
+        margin-top: 12px; padding: 9px 16px;
+        background: var(--accent-glow); border: 1px solid var(--accent);
+        border-radius: 8px; color: var(--accent-light);
+        font-size: 13px; font-weight: 700; text-decoration: none;
+        transition: all 0.2s;
+    }
+    .file-dl:hover { background: var(--accent); color: #fff; }
+
     .report-text {
         font-size: 14px; color: var(--text); line-height: 1.8;
         white-space: pre-wrap; background: rgba(255,255,255,0.02);

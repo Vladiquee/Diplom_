@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Система обліку практик{% endblock %}</title>
+    <title>{% block title %}EduSync{% endblock %} — Система обліку практик</title>
 
     <!-- Google Fonts: Nunito (body) + Raleway (headings) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,6 +29,29 @@
             --border:       rgba(255,255,255,0.07);
             --sidebar-w:    240px;
             --radius:       12px;
+        }
+
+        /* === СВІТЛА ТЕМА === */
+        [data-theme="light"] {
+            --bg:           #f4f6fb;
+            --bg-card:      #ffffff;
+            --bg-sidebar:   #ffffff;
+            --accent:       #4f8ef7;
+            --accent-light: #2563eb;
+            --accent-glow:  rgba(79, 142, 247, 0.12);
+            --success:      #059669;
+            --warning:      #d97706;
+            --danger:       #dc2626;
+            --info:         #2563eb;
+            --text:         #1e293b;
+            --text-muted:   #64748b;
+            --border:       rgba(0,0,0,0.09);
+        }
+
+        /* Плавний перехід при зміні теми */
+        body, .sidebar, .card, .topbar, .form-control,
+        .stat-card, .nav-link, .btn {
+            transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
         }
 
         /* =============================================
@@ -460,9 +483,78 @@
             margin-top: 6px;
             font-weight: 600;
         }
+    .site-footer {
+        padding: 14px 32px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .footer-brand {
+        font-family: 'Raleway', sans-serif;
+        font-weight: 800;
+        font-size: 13px;
+        color: var(--accent-light);
+        letter-spacing: 0.5px;
+    }
+
+    .footer-sep { color: #2a2f3d; }
+
+    .footer-copy { color: var(--text-muted); }
+
+    .footer-ver {
+        background: rgba(79,142,247,0.1);
+        color: var(--accent-light);
+        border: 1px solid rgba(79,142,247,0.2);
+        padding: 1px 8px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    /* Перемикач теми */
+    .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .theme-toggle {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .theme-toggle:hover {
+        background: var(--accent-glow);
+        border-color: var(--accent);
+        transform: translateY(-1px);
+    }
     </style>
 
     {% block extra_head %}{% endblock %}
+
+    <!-- Застосовуємо збережену тему ДО рендеру щоб не було миготіння -->
+    <script>
+        (function() {
+            const saved = localStorage.getItem('edusync-theme');
+            if (saved === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
 </head>
 <body>
 
@@ -472,8 +564,9 @@
     <aside class="sidebar">
         <div class="sidebar-logo">
             <div class="logo-icon">🎓</div>
-            <h2>Система обліку практик</h2>
-            <p>Полтавський політехнічний ліцей</p>
+            <h2>EduSync</h2>
+            <p>Система обліку практик</p>
+            
         </div>
 
         <nav>
@@ -495,9 +588,17 @@
                    class="nav-link {% if 'practice' in request.endpoint %}active{% endif %}">
                     <span class="nav-icon">📋</span> Практики
                 </a>
+                <a href="{{ url_for('admin_teachers') }}"
+                   class="nav-link {% if request.endpoint in ['admin_teachers','admin_delete_teacher'] %}active{% endif %}">
+                    <span class="nav-icon">👨‍🏫</span> Керівники
+                </a>
                 <a href="{{ url_for('admin_add_teacher') }}"
-                   class="nav-link {% if 'teacher' in request.endpoint %}active{% endif %}">
-                    <span class="nav-icon">👨‍🏫</span> Додати керівника
+                   class="nav-link {% if request.endpoint == 'admin_add_teacher' %}active{% endif %}">
+                    <span class="nav-icon">➕</span> Додати керівника
+                </a>
+                <a href="{{ url_for('my_account') }}"
+                   class="nav-link {% if request.endpoint == 'my_account' %}active{% endif %}">
+                    <span class="nav-icon">⚙️</span> Мій акаунт
                 </a>
 
             {% elif session.get('user_role') == 'teacher' %}
@@ -505,6 +606,10 @@
                 <a href="{{ url_for('teacher_dashboard') }}"
                    class="nav-link {% if request.endpoint == 'teacher_dashboard' %}active{% endif %}">
                     <span class="nav-icon">📊</span> Мої студенти
+                </a>
+                <a href="{{ url_for('my_account') }}"
+                   class="nav-link {% if request.endpoint == 'my_account' %}active{% endif %}">
+                    <span class="nav-icon">⚙️</span> Мій акаунт
                 </a>
 
             {% elif session.get('user_role') == 'student' %}
@@ -521,13 +626,22 @@
                    class="nav-link {% if request.endpoint == 'student_report' %}active{% endif %}">
                     <span class="nav-icon">📄</span> Звіт
                 </a>
+                <a href="{{ url_for('my_account') }}"
+                   class="nav-link {% if request.endpoint == 'my_account' %}active{% endif %}">
+                    <span class="nav-icon">⚙️</span> Мій акаунт
+                </a>
             {% endif %}
         </nav>
 
         <!-- Користувач внизу сайдбара -->
         <div class="sidebar-user">
             <div class="user-avatar">
-                {{ session.get('user_login', '?')[0].upper() }}
+                {% if session.get('user_avatar') %}
+                    <img src="{{ url_for('static', filename='avatars/' + session.get('user_avatar')) }}"
+                         alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                {% else %}
+                    {{ session.get('user_login', '?')[0].upper() }}
+                {% endif %}
             </div>
             <div class="user-info">
                 <div class="user-name">{{ session.get('user_login', '') }}</div>
@@ -553,7 +667,12 @@
                 <div class="page-title">{% block page_title %}{% endblock %}</div>
                 <div class="page-subtitle">{% block page_subtitle %}{% endblock %}</div>
             </div>
-            <div>{% block topbar_actions %}{% endblock %}</div>
+            <div class="topbar-right">
+                {% block topbar_actions %}{% endblock %}
+                <button class="theme-toggle" onclick="toggleTheme()" title="Змінити тему" id="themeToggle">
+                    <span id="themeIcon">🌙</span>
+                </button>
+            </div>
         </div>
 
         <!-- Flash-повідомлення -->
@@ -578,7 +697,43 @@
             <!-- Сюди вставляється вміст кожної сторінки -->
             {% block content %}{% endblock %}
         </div>
+        <footer class="site-footer">
+            <span class="footer-brand">EduSync</span>
+            <span class="footer-sep">·</span>
+            <span class="footer-copy">© 2026 Карп'як Владислав</span>
+            <span class="footer-sep">·</span>
+            <span class="footer-ver">v1.0</span>
+        </footer>
     </div>
+
+    <script>
+        // Перемикання світлої/темної теми
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isLight = html.getAttribute('data-theme') === 'light';
+
+            if (isLight) {
+                html.removeAttribute('data-theme');
+                localStorage.setItem('edusync-theme', 'dark');
+            } else {
+                html.setAttribute('data-theme', 'light');
+                localStorage.setItem('edusync-theme', 'light');
+            }
+            updateThemeIcon();
+        }
+
+        // Оновлюємо іконку залежно від теми
+        function updateThemeIcon() {
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            const icon = document.getElementById('themeIcon');
+            const btn = document.getElementById('themeToggle');
+            if (icon) icon.textContent = isLight ? '☀️' : '🌙';
+            if (btn) btn.title = isLight ? 'Увімкнути темну тему' : 'Увімкнути світлу тему';
+        }
+
+        // Встановлюємо правильну іконку при завантаженні
+        updateThemeIcon();
+    </script>
 
 </body>
 </html>

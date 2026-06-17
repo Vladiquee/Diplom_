@@ -59,6 +59,36 @@
     </div>
 </div>
 
+<!-- Графіки -->
+<div class="charts-row">
+    <div class="card chart-card">
+        <div class="card-header">
+            <div class="card-title">📊 Статуси практик</div>
+        </div>
+        <div class="chart-box">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card chart-card">
+        <div class="card-header">
+            <div class="card-title">🏆 Розподіл оцінок</div>
+        </div>
+        <div class="chart-box">
+            <canvas id="gradeChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">👥 Практики по групах</div>
+    </div>
+    <div class="chart-box-wide">
+        <canvas id="groupChart"></canvas>
+    </div>
+</div>
+
 <!-- Швидкі дії -->
 <div class="card">
     <div class="card-header">
@@ -162,6 +192,113 @@
         .status-grid { grid-template-columns: repeat(2, 1fr); }
         .quick-actions { grid-template-columns: repeat(2, 1fr); }
     }
+
+    /* Графіки */
+    .charts-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+    .chart-card { margin-bottom: 0; }
+    .chart-box {
+        position: relative;
+        height: 260px;
+        padding: 8px;
+    }
+    .chart-box-wide {
+        position: relative;
+        height: 280px;
+        padding: 8px;
+    }
+    @media (max-width: 768px) {
+        .charts-row { grid-template-columns: 1fr; }
+    }
 </style>
+
+<!-- Chart.js — бібліотека для графіків -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+    // Дані з сервера (передані через Jinja2)
+    const chartData = {{ chart_data | tojson }};
+
+    // Спільні налаштування кольорів під темну тему
+    // Колір тексту і сітки залежно від теми
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    Chart.defaults.color = isLight ? '#475569' : '#7a8599';
+    Chart.defaults.font.family = "'Nunito', sans-serif";
+    const gridColor = isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)';
+
+    // 1. Кругова діаграма — статуси практик
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: chartData.statuses.labels,
+            datasets: [{
+                data: chartData.statuses.values,
+                backgroundColor: ['#fbbf24', '#60a5fa', '#4f8ef7', '#34d399'],
+                borderColor: isLight ? '#ffffff' : '#181c27',
+                borderWidth: 3,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } }
+            }
+        }
+    });
+
+    // 2. Кругова діаграма — розподіл оцінок
+    new Chart(document.getElementById('gradeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: chartData.grades.labels,
+            datasets: [{
+                data: chartData.grades.values,
+                backgroundColor: ['#f87171', '#fbbf24', '#60a5fa', '#34d399'],
+                borderColor: isLight ? '#ffffff' : '#181c27',
+                borderWidth: 3,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } }
+            }
+        }
+    });
+
+    // 3. Стовпчаста діаграма — практики по групах
+    new Chart(document.getElementById('groupChart'), {
+        type: 'bar',
+        data: {
+            labels: chartData.groups.labels,
+            datasets: [{
+                label: 'Кількість практик',
+                data: chartData.groups.values,
+                backgroundColor: 'rgba(79,142,247,0.6)',
+                borderColor: '#4f8ef7',
+                borderWidth: 1,
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 },
+                    grid: { color: gridColor }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
 
 {% endblock %}

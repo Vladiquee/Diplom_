@@ -5,6 +5,15 @@
 {% block page_title %}Мої студенти{% endblock %}
 {% block page_subtitle %}Список студентів та їхніх практик{% endblock %}
 
+{% block topbar_actions %}
+    {% if practices %}
+    <div class="topbar-btns">
+        <a href="{{ url_for('teacher_export_excel') }}" class="btn btn-secondary">📊 Excel</a>
+        <a href="{{ url_for('teacher_export_pdf') }}" class="btn btn-secondary">📄 PDF</a>
+    </div>
+    {% endif %}
+{% endblock %}
+
 {% block content %}
 
 <!-- Статистика керівника -->
@@ -26,6 +35,18 @@
         <div class="stat-label">⏳ В процесі</div>
     </div>
 </div>
+
+<!-- Графік статусів -->
+{% if practices %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">📊 Статуси моїх студентів</div>
+    </div>
+    <div class="t-chart-box">
+        <canvas id="teacherChart"></canvas>
+    </div>
+</div>
+{% endif %}
 
 <!-- Таблиця студентів -->
 <div class="card">
@@ -141,6 +162,51 @@
         font-size: 14px;
         color: var(--text-muted);
     }
+
+    .topbar-btns { display: flex; gap: 8px; align-items: center; }
+
+    .t-chart-box {
+        position: relative;
+        height: 240px;
+        padding: 8px;
+    }
 </style>
+
+{% if practices %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+    const tData = {{ chart_data | tojson }};
+    // Колір тексту і сітки залежно від теми
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    Chart.defaults.color = isLight ? '#475569' : '#7a8599';
+    Chart.defaults.font.family = "'Nunito', sans-serif";
+
+    new Chart(document.getElementById('teacherChart'), {
+        type: 'bar',
+        data: {
+            labels: tData.labels,
+            datasets: [{
+                label: 'Кількість студентів',
+                data: tData.values,
+                backgroundColor: ['#fbbf24', '#60a5fa', '#4f8ef7', '#34d399'],
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 },
+                    grid: { color: isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)' }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
+{% endif %}
 
 {% endblock %}

@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import session, redirect, url_for, flash
-import hashlib
+from werkzeug.security import generate_password_hash, check_password_hash as werkzeug_check
 
 # ============================================================
 # ХЕШУВАННЯ ПАРОЛІВ
@@ -10,18 +10,24 @@ def hash_password(password):
     """
     Перетворює пароль у хеш (зашифрований рядок).
     Ніколи не зберігаємо пароль у відкритому вигляді!
-    
-    Приклад: hash_password("1234") → "03ac674216f3e15c..."
+
+    Використовує werkzeug.security (вбудована бібліотека Flask),
+    яка автоматично додає унікальну сіль (salt) до кожного хешу
+    та використовує алгоритм pbkdf2:sha256.
+
+    Приклад: hash_password("1234") → "pbkdf2:sha256:260000$..."
     """
-    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+    return generate_password_hash(password)
 
 
 def check_password(password, password_hash):
     """
     Перевіряє чи введений пароль відповідає збереженому хешу.
     Повертає True або False.
+
+    Werkzeug автоматично витягує сіль із хешу для коректного порівняння.
     """
-    return hash_password(password) == password_hash
+    return werkzeug_check(password_hash, password)
 
 
 # ============================================================

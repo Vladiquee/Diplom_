@@ -389,10 +389,12 @@ def get_practices_by_teacher_id(teacher_id):
         SELECT practices.*,
                students.full_name    AS student_name,
                students.group_name   AS student_group,
-               companies.name        AS company_name
+               companies.name        AS company_name,
+               teachers.full_name    AS teacher_name
         FROM practices
         JOIN students  ON practices.student_id  = students.id
         JOIN companies ON practices.company_id  = companies.id
+        JOIN teachers  ON practices.teacher_id  = teachers.id
         WHERE practices.teacher_id = ?
         ORDER BY students.full_name
     ''', (teacher_id,)).fetchall()
@@ -584,3 +586,266 @@ def get_all_reports():
 
 if __name__ == '__main__':
     init_db()
+
+
+# ============================================================
+# НОВІ ФУНКЦІЇ — ТИЖДЕНЬ 1
+# ============================================================
+
+def get_students_without_practice():
+    """
+    Повертає список студентів у яких ще НЕ призначено практику.
+    Використовується у формі призначення — щоб адмін не міг
+    випадково призначити двічі одному студенту.
+    """
+    conn = get_db_connection()
+    students = conn.execute('''
+        SELECT students.*, users.login
+        FROM students
+        JOIN users ON students.user_id = users.id
+        WHERE students.id NOT IN (
+            SELECT student_id FROM practices
+        )
+        ORDER BY students.full_name
+    ''').fetchall()
+    conn.close()
+    return students
+
+
+def search_students(query):
+    """
+    Пошук студентів за іменем або групою.
+    query — рядок пошуку (наприклад 'Іванен' або '121-22')
+    """
+    conn = get_db_connection()
+    pattern = f'%{query}%'
+    students = conn.execute('''
+        SELECT students.*, users.login
+        FROM students
+        JOIN users ON students.user_id = users.id
+        WHERE students.full_name LIKE ?
+           OR students.group_name LIKE ?
+        ORDER BY students.full_name
+    ''', (pattern, pattern)).fetchall()
+    conn.close()
+    return students
+
+
+def get_practices_filtered(status=None, teacher_id=None, search=None):
+    """
+    Повертає практики з фільтрацією на рівні БД.
+    status     — 'assigned' | 'in_progress' | 'submitted' | 'graded' | None (всі)
+    teacher_id — id керівника або None (всі)
+    search     — рядок пошуку по імені студента або назві закладу
+    """
+    conn = get_db_connection()
+
+    query = '''
+        SELECT practices.*,
+               students.full_name  AS student_name,
+               students.group_name AS student_group,
+               companies.name      AS company_name,
+               teachers.full_name  AS teacher_name
+        FROM practices
+        JOIN students  ON practices.student_id  = students.id
+        JOIN companies ON practices.company_id  = companies.id
+        JOIN teachers  ON practices.teacher_id  = teachers.id
+        WHERE 1=1
+    '''
+    params = []
+
+    if status:
+        query += ' AND practices.status = ?'
+        params.append(status)
+
+    if teacher_id:
+        query += ' AND practices.teacher_id = ?'
+        params.append(teacher_id)
+
+    if search:
+        query += ' AND (students.full_name LIKE ? OR companies.name LIKE ?)'
+        params.extend([f'%{search}%', f'%{search}%'])
+
+    query += ' ORDER BY students.full_name'
+
+    practices = conn.execute(query, params).fetchall()
+    conn.close()
+    return practices
+
+
+# ============================================================
+# НОВІ ФУНКЦІЇ — КЕРУВАННЯ ОБЛІКОВИМИ ЗАПИСАМИ
+# ============================================================
+
+def get_all_teachers_with_login():
+    """Повертає всіх викладачів разом з логіном."""
+    conn = get_db_connection()
+    teachers = conn.execute('''
+        SELECT teachers.*, users.login, users.id AS user_id
+        FROM teachers
+        JOIN users ON teachers.user_id = users.id
+        ORDER BY teachers.full_name
+    ''').fetchall()
+    conn.close()
+    return teachers
+
+
+def update_user_login(user_id, new_login):
+    """
+    Змінює логін користувача.
+    Повертає True якщо успішно, False якщо логін вже зайнятий.
+    """
+    conn = get_db_connection()
+    try:
+        conn.execute(
+            'UPDATE users SET login = ? WHERE id = ?',
+            (new_login, user_id)
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        # Логін вже існує
+        return False
+    finally:
+        conn.close()
+
+
+def update_user_password(user_id, new_password_hash):
+    """Змінює пароль користувача (приймає вже захешований пароль)."""
+    conn = get_db_connection()
+    conn.execute(
+        'UPDATE users SET password_hash = ? WHERE id = ?',
+        (new_password_hash, user_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_teacher(user_id):
+    """Видаляє викладача (і його обліковий запис через CASCADE)."""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+
+
+def update_teacher(teacher_id, full_name):
+    """Оновлює ім'я викладача."""
+    conn = get_db_connection()
+    conn.execute(
+        'UPDATE teachers SET full_name = ? WHERE id = ?',
+        (full_name, teacher_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_teacher_by_id(teacher_id):
+    """Знаходить викладача за id."""
+    conn = get_db_connection()
+    teacher = conn.execute('''
+        SELECT teachers.*, users.login, users.id AS user_id
+        FROM teachers
+        JOIN users ON teachers.user_id = users.id
+        WHERE teachers.id = ?
+    ''', (teacher_id,)).fetchone()
+    conn.close()
+    return teacher
+
+
+# ============================================================
+# НОВІ ФУНКЦІЇ — УПРАВЛІННЯ ОБЛІКОВИМИ ЗАПИСАМИ
+# ============================================================
+
+def get_all_teachers_with_logins():
+    """Повертає всіх викладачів разом з їхніми логінами."""
+    conn = get_db_connection()
+    teachers = conn.execute('''
+        SELECT teachers.*, users.login, users.id AS user_id
+        FROM teachers
+        JOIN users ON teachers.user_id = users.id
+        ORDER BY teachers.full_name
+    ''').fetchall()
+    conn.close()
+    return teachers
+
+
+def update_user_login(user_id, new_login):
+    """
+    Змінює логін користувача.
+    Повертає True якщо успішно, False якщо логін вже зайнятий.
+    """
+    conn = get_db_connection()
+    try:
+        conn.execute(
+            'UPDATE users SET login = ? WHERE id = ?',
+            (new_login, user_id)
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        # Логін вже існує (UNIQUE constraint)
+        return False
+    finally:
+        conn.close()
+
+
+def update_user_password(user_id, new_password_hash):
+    """Змінює пароль користувача (приймає вже захешований пароль)."""
+    conn = get_db_connection()
+    conn.execute(
+        'UPDATE users SET password_hash = ? WHERE id = ?',
+        (new_password_hash, user_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_teacher(user_id):
+    """Видаляє викладача (і його обліковий запис через CASCADE)."""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_teacher_by_id(teacher_id):
+    """Знаходить викладача за його id."""
+    conn = get_db_connection()
+    teacher = conn.execute(
+        'SELECT teachers.*, users.login, users.id AS user_id FROM teachers JOIN users ON teachers.user_id = users.id WHERE teachers.id = ?',
+        (teacher_id,)
+    ).fetchone()
+    conn.close()
+    return teacher
+
+
+# ============================================================
+# АВАТАРКИ КОРИСТУВАЧІВ
+# ============================================================
+
+def add_avatar_column():
+    """
+    Додає колонку avatar до таблиці users якщо її ще немає.
+    Викликається при запуску — безпечно якщо колонка вже існує.
+    """
+    conn = get_db_connection()
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN avatar TEXT")
+        conn.commit()
+        print("✅ Колонку avatar додано до таблиці users")
+    except sqlite3.OperationalError:
+        pass  # Колонка вже існує — все ок
+    finally:
+        conn.close()
+
+
+def update_user_avatar(user_id, filename):
+    """Зберігає назву файлу аватарки для користувача."""
+    conn = get_db_connection()
+    conn.execute(
+        "UPDATE users SET avatar = ? WHERE id = ?",
+        (filename, user_id)
+    )
+    conn.commit()
+    conn.close()

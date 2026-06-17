@@ -5,20 +5,43 @@
 {% block page_subtitle %}Усі призначені практики студентів{% endblock %}
 
 {% block topbar_actions %}
-    <a href="{{ url_for('admin_add_practice') }}" class="btn btn-primary">➕ Призначити практику</a>
+    <div class="topbar-btns">
+        <a href="{{ url_for('export_excel') }}" class="btn btn-secondary">📊 Excel</a>
+        <a href="{{ url_for('export_pdf') }}" class="btn btn-secondary">📄 PDF</a>
+        <a href="{{ url_for('admin_add_practice') }}" class="btn btn-primary">➕ Призначити практику</a>
+    </div>
 {% endblock %}
 
 {% block content %}
 
-<!-- Фільтр за статусом -->
-<div class="filter-bar">
-    <span class="filter-label">Фільтр:</span>
-    <button class="filter-btn active" data-filter="all">Всі</button>
-    <button class="filter-btn" data-filter="assigned">Призначено</button>
-    <button class="filter-btn" data-filter="in_progress">В процесі</button>
-    <button class="filter-btn" data-filter="submitted">Здано звіт</button>
-    <button class="filter-btn" data-filter="graded">Оцінено</button>
+<!-- Фільтр + пошук (серверний) -->
+<form method="GET" action="{{ url_for('admin_practices') }}">
+<div class="filter-top">
+    <div class="filter-bar">
+        <span class="filter-label">Статус:</span>
+        <button type="submit" name="status" value=""
+                class="filter-btn {% if current_status == 'all' %}active{% endif %}">Всі</button>
+        <button type="submit" name="status" value="assigned"
+                class="filter-btn {% if current_status == 'assigned' %}active{% endif %}">Призначено</button>
+        <button type="submit" name="status" value="in_progress"
+                class="filter-btn {% if current_status == 'in_progress' %}active{% endif %}">В процесі</button>
+        <button type="submit" name="status" value="submitted"
+                class="filter-btn {% if current_status == 'submitted' %}active{% endif %}">Здано звіт</button>
+        <button type="submit" name="status" value="graded"
+                class="filter-btn {% if current_status == 'graded' %}active{% endif %}">Оцінено</button>
+    </div>
+    <div class="search-wrap">
+        <span>🔍</span>
+        <input type="text" name="q" class="search-input"
+               placeholder="Пошук за іменем або закладом..."
+               value="{{ current_search }}">
+        {% if current_search %}
+            <a href="{{ url_for('admin_practices') }}" class="search-clear">✕</a>
+        {% endif %}
+        <button type="submit" class="btn btn-secondary btn-sm">Знайти</button>
+    </div>
 </div>
+</form>
 
 <div class="card">
     <div class="card-header">
@@ -131,18 +154,25 @@
     .empty-text  { font-size: 14px; color: var(--text-muted); }
 </style>
 
-<script>
-    // Фільтрація рядків таблиці по статусу
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            const filter = btn.dataset.filter;
-            document.querySelectorAll('#practices-table tbody tr').forEach(row => {
-                row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
-            });
-        });
-    });
-</script>
+<style>
+    .topbar-btns { display: flex; gap: 8px; align-items: center; }
+    .filter-top {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .search-wrap {
+        display: flex; align-items: center; gap: 8px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        border-radius: 10px; padding: 6px 12px;
+    }
+    .search-input {
+        background: transparent; border: none; outline: none;
+        color: var(--text); font-family: 'Nunito', sans-serif;
+        font-size: 13px; width: 200px;
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-clear { color: var(--text-muted); font-size: 13px; cursor: pointer; }
+    .search-clear:hover { color: var(--danger); }
+</style>
 {% endblock %}
