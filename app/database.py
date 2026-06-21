@@ -1,7 +1,9 @@
 import sqlite3
+import os
 
-# Назва файлу бази даних — він автоматично створиться у папці проєкту
-DB_NAME = 'practice_system.db'
+# Абсолютний шлях до файлу бази даних — працює локально і на сервері (PythonAnywhere тощо).
+# База завжди створюється у тій самій папці, де лежить цей файл.
+DB_NAME = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'practice_system.db')
 
 
 def get_db_connection():
