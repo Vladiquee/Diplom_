@@ -49,7 +49,14 @@
                         <td class="row-num">{{ loop.index }}</td>
                         <td>
                             <div class="student-row">
-                                <div class="avatar">{{ s.full_name[0].upper() }}</div>
+                                <div class="avatar">
+                                    {% if s.avatar %}
+                                        <img src="{{ url_for('static', filename='avatars/' + s.avatar) }}"
+                                             alt="" class="avatar-photo">
+                                    {% else %}
+                                        {{ s.full_name[0].upper() }}
+                                    {% endif %}
+                                </div>
                                 <span class="student-fullname">{{ s.full_name }}</span>
                             </div>
                         </td>
@@ -101,7 +108,9 @@
         background: linear-gradient(135deg, var(--accent), #7c3aed);
         display: flex; align-items: center; justify-content: center;
         font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
+        overflow: hidden;
     }
+    .avatar-photo { width: 100%; height: 100%; object-fit: cover; }
     .student-fullname { font-weight: 600; font-size: 14px; }
     .group-tag {
         background: rgba(79,142,247,0.1); color: var(--accent-light);

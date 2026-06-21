@@ -78,6 +78,55 @@
         {% endif %}
     </div>
 
+{% elif practice.status == 'revision' and report %}
+    <!-- ====== ЗВІТ ПОВЕРНЕНО НА ДООПРАЦЮВАННЯ ====== -->
+    <div class="card revision-card">
+        <div class="card-header">
+            <div class="card-title">↩️ Звіт повернено на доопрацювання</div>
+        </div>
+        {% if report.teacher_comment %}
+            <div class="revision-comment">
+                <div class="rc-label">💬 Що потрібно виправити (коментар керівника):</div>
+                <div class="rc-text">{{ report.teacher_comment }}</div>
+            </div>
+        {% endif %}
+        <div class="rc-hint">
+            Виправте звіт згідно з зауваженнями нижче та здайте знову.
+        </div>
+    </div>
+
+    <!-- Форма повторної здачі -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">✏️ Виправити та здати знову</div>
+        </div>
+        <form method="POST" action="{{ url_for('student_report') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label" for="content_text">Текст звіту</label>
+                <textarea id="content_text" name="content_text" class="form-control"
+                          rows="14" placeholder="Виправте текст звіту...">{{ report.content_text }}</textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Прикріпити / замінити файл</label>
+                <label class="file-upload" for="report_file_rev">
+                    <span class="file-icon">📎</span>
+                    <span class="file-text" id="fileTextRev">
+                        {% if report.file_path %}Файл прикріплено — обрати інший{% else %}Обрати файл звіту{% endif %}
+                    </span>
+                </label>
+                <input type="file" id="report_file_rev" name="report_file"
+                       accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,.rar"
+                       style="display:none;" onchange="showFileNameRev(this)">
+            </div>
+            <div style="text-align:right;">
+                <button type="submit" class="btn btn-primary"
+                        onclick="return confirm('Здати виправлений звіт на повторну перевірку?')">
+                    📤 Здати виправлений звіт
+                </button>
+            </div>
+        </form>
+    </div>
+
 {% elif report %}
     <!-- ====== ЗВІТ НА ПЕРЕВІРЦІ ====== -->
     <div class="card pending-card">
@@ -516,6 +565,27 @@
         background: var(--accent);
         color: #fff;
     }
+    .revision-card {
+        border: 1px solid rgba(251,191,36,0.4);
+        background: rgba(251,191,36,0.05);
+    }
+    .revision-comment {
+        background: rgba(251,191,36,0.1);
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 12px;
+    }
+    .rc-label {
+        font-size: 13px; font-weight: 700; color: #fbbf24;
+        margin-bottom: 8px;
+    }
+    .rc-text {
+        font-size: 14px; color: var(--text);
+        line-height: 1.6; white-space: pre-wrap;
+    }
+    .rc-hint {
+        font-size: 13px; color: var(--text-muted);
+    }
 </style>
 
 <script>
@@ -528,6 +598,13 @@
     }
     function showFileNameUpd(input) {
         const txt = document.getElementById('fileTextUpd');
+        if (input.files && input.files[0]) {
+            txt.textContent = '✅ ' + input.files[0].name;
+            txt.style.color = 'var(--success)';
+        }
+    }
+    function showFileNameRev(input) {
+        const txt = document.getElementById('fileTextRev');
         if (input.files && input.files[0]) {
             txt.textContent = '✅ ' + input.files[0].name;
             txt.style.color = 'var(--success)';

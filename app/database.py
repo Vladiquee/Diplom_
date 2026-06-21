@@ -82,7 +82,7 @@ def init_db():
             end_date    DATE NOT NULL,
             topic       TEXT NOT NULL,
             status      TEXT DEFAULT 'assigned'
-                        CHECK(status IN ('assigned', 'in_progress', 'submitted', 'graded')),
+                        CHECK(status IN ('assigned', 'in_progress', 'submitted', 'graded', 'revision')),
             FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
             FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE CASCADE,
             FOREIGN KEY (teacher_id) REFERENCES teachers (id) ON DELETE CASCADE
@@ -199,7 +199,8 @@ def get_all_students():
     """Повертає список усіх студентів разом з їхніми логінами."""
     conn = get_db_connection()
     students = conn.execute('''
-        SELECT students.*, users.login
+        SELECT students.*, users.login,
+               CASE WHEN users.avatar_private = 1 THEN NULL ELSE users.avatar END AS avatar
         FROM students
         JOIN users ON students.user_id = users.id
         ORDER BY students.full_name
@@ -390,11 +391,13 @@ def get_practices_by_teacher_id(teacher_id):
                students.full_name    AS student_name,
                students.group_name   AS student_group,
                companies.name        AS company_name,
-               teachers.full_name    AS teacher_name
+               teachers.full_name    AS teacher_name,
+               CASE WHEN student_user.avatar_private = 1 THEN NULL ELSE student_user.avatar END AS student_avatar
         FROM practices
         JOIN students  ON practices.student_id  = students.id
         JOIN companies ON practices.company_id  = companies.id
         JOIN teachers  ON practices.teacher_id  = teachers.id
+        JOIN users student_user ON students.user_id = student_user.id
         WHERE practices.teacher_id = ?
         ORDER BY students.full_name
     ''', (teacher_id,)).fetchall()
@@ -410,11 +413,13 @@ def get_all_practices():
                students.full_name    AS student_name,
                students.group_name   AS student_group,
                companies.name        AS company_name,
-               teachers.full_name    AS teacher_name
+               teachers.full_name    AS teacher_name,
+               CASE WHEN student_user.avatar_private = 1 THEN NULL ELSE student_user.avatar END AS student_avatar
         FROM practices
         JOIN students  ON practices.student_id  = students.id
         JOIN companies ON practices.company_id  = companies.id
         JOIN teachers  ON practices.teacher_id  = teachers.id
+        JOIN users student_user ON students.user_id = student_user.id
         ORDER BY students.full_name
     ''').fetchall()
     conn.close()
@@ -422,11 +427,20 @@ def get_all_practices():
 
 
 def get_practice_by_id(practice_id):
-    """Знаходить одну практику за id."""
+    """Знаходить одну практику за id (з іменами студента, закладу, керівника)."""
     conn = get_db_connection()
-    practice = conn.execute(
-        'SELECT * FROM practices WHERE id = ?', (practice_id,)
-    ).fetchone()
+    practice = conn.execute('''
+        SELECT practices.*,
+               students.full_name   AS student_name,
+               students.group_name  AS student_group,
+               companies.name       AS company_name,
+               teachers.full_name   AS teacher_name
+        FROM practices
+        JOIN students  ON practices.student_id = students.id
+        JOIN companies ON practices.company_id = companies.id
+        JOIN teachers  ON practices.teacher_id = teachers.id
+        WHERE practices.id = ?
+    ''', (practice_id,)).fetchone()
     conn.close()
     return practice
 
@@ -561,6 +575,26 @@ def grade_report(practice_id, grade, teacher_comment):
     conn.close()
 
 
+def return_report_for_revision(practice_id, teacher_comment):
+    """
+    Керівник повертає звіт на доопрацювання з коментарем.
+    Статус практики стає 'revision', оцінка не виставляється.
+    """
+    conn = get_db_connection()
+    conn.execute(
+        '''UPDATE reports
+           SET teacher_comment = ?, grade = NULL, graded_at = NULL
+           WHERE practice_id = ?''',
+        (teacher_comment, practice_id)
+    )
+    conn.execute(
+        'UPDATE practices SET status = ? WHERE id = ?',
+        ('revision', practice_id)
+    )
+    conn.commit()
+    conn.close()
+
+
 def get_all_reports():
     """Повертає всі звіти з іменем студента та назвою закладу (для адміна)."""
     conn = get_db_connection()
@@ -620,7 +654,8 @@ def search_students(query):
     conn = get_db_connection()
     pattern = f'%{query}%'
     students = conn.execute('''
-        SELECT students.*, users.login
+        SELECT students.*, users.login,
+               CASE WHEN users.avatar_private = 1 THEN NULL ELSE users.avatar END AS avatar
         FROM students
         JOIN users ON students.user_id = users.id
         WHERE students.full_name LIKE ?
@@ -645,11 +680,13 @@ def get_practices_filtered(status=None, teacher_id=None, search=None):
                students.full_name  AS student_name,
                students.group_name AS student_group,
                companies.name      AS company_name,
-               teachers.full_name  AS teacher_name
+               teachers.full_name  AS teacher_name,
+               CASE WHEN student_user.avatar_private = 1 THEN NULL ELSE student_user.avatar END AS student_avatar
         FROM practices
         JOIN students  ON practices.student_id  = students.id
         JOIN companies ON practices.company_id  = companies.id
         JOIN teachers  ON practices.teacher_id  = teachers.id
+        JOIN users student_user ON students.user_id = student_user.id
         WHERE 1=1
     '''
     params = []
@@ -761,7 +798,8 @@ def get_all_teachers_with_logins():
     """Повертає всіх викладачів разом з їхніми логінами."""
     conn = get_db_connection()
     teachers = conn.execute('''
-        SELECT teachers.*, users.login, users.id AS user_id
+        SELECT teachers.*, users.login, users.id AS user_id,
+               CASE WHEN users.avatar_private = 1 THEN NULL ELSE users.avatar END AS avatar
         FROM teachers
         JOIN users ON teachers.user_id = users.id
         ORDER BY teachers.full_name
@@ -836,8 +874,14 @@ def add_avatar_column():
         print("✅ Колонку avatar додано до таблиці users")
     except sqlite3.OperationalError:
         pass  # Колонка вже існує — все ок
-    finally:
-        conn.close()
+    # Колонка приватності аватарки (0 = видно всім, 1 = приватна)
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN avatar_private INTEGER DEFAULT 0")
+        conn.commit()
+        print("✅ Колонку avatar_private додано до таблиці users")
+    except sqlite3.OperationalError:
+        pass
+    conn.close()
 
 
 def update_user_avatar(user_id, filename):
@@ -849,3 +893,60 @@ def update_user_avatar(user_id, filename):
     )
     conn.commit()
     conn.close()
+
+
+def update_avatar_privacy(user_id, is_private):
+    """Встановлює приватність аватарки (True = приватна, False = видно всім)."""
+    conn = get_db_connection()
+    conn.execute(
+        "UPDATE users SET avatar_private = ? WHERE id = ?",
+        (1 if is_private else 0, user_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def migrate_status_check():
+    """
+    Оновлює CHECK-обмеження статусів практик щоб дозволити 'revision'.
+    Потрібно для наявних баз, створених до додавання доопрацювання.
+    Безпечно: якщо обмеження вже актуальне — нічого не змінює.
+    """
+    conn = get_db_connection()
+    # Перевіряємо чи в схемі вже є 'revision'
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='practices'"
+    ).fetchone()
+    if row and 'revision' in row['sql']:
+        conn.close()
+        return  # вже оновлено
+
+    # Перебудовуємо таблицю зі старим CHECK на новий, зберігаючи дані
+    try:
+        conn.execute("PRAGMA foreign_keys=OFF")
+        conn.executescript('''
+            CREATE TABLE practices_new (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id  INTEGER NOT NULL,
+                company_id  INTEGER NOT NULL,
+                teacher_id  INTEGER NOT NULL,
+                start_date  DATE NOT NULL,
+                end_date    DATE NOT NULL,
+                topic       TEXT NOT NULL,
+                status      TEXT DEFAULT 'assigned'
+                            CHECK(status IN ('assigned', 'in_progress', 'submitted', 'graded', 'revision')),
+                FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
+                FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE CASCADE,
+                FOREIGN KEY (teacher_id) REFERENCES teachers (id) ON DELETE CASCADE
+            );
+            INSERT INTO practices_new SELECT * FROM practices;
+            DROP TABLE practices;
+            ALTER TABLE practices_new RENAME TO practices;
+        ''')
+        conn.commit()
+        print("✅ Оновлено статуси практик (додано 'revision')")
+    except sqlite3.OperationalError as e:
+        print(f"⚠️ Міграція статусів: {e}")
+    finally:
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.close()

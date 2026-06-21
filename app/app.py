@@ -25,7 +25,7 @@ from database import (
     update_diary_entry, delete_diary_entry,
     # Звіти
     submit_report, get_report_by_practice_id,
-    grade_report, get_all_reports,
+    grade_report, get_all_reports, return_report_for_revision,
     # Видалення
     delete_user,
     # Нові функції (тиждень 1)
@@ -589,17 +589,34 @@ def teacher_view_report(practice_id):
         flash('Практику не знайдено.', 'danger')
         return redirect(url_for('teacher_dashboard'))
 
+    # Перевірка: керівник може працювати лише зі СВОЇМИ студентами
+    teacher = get_teacher_by_user_id(get_current_user_id())
+    if not teacher or practice['teacher_id'] != teacher['id']:
+        flash('Немає доступу — це не ваш студент.', 'danger')
+        return redirect(url_for('teacher_dashboard'))
+
     if request.method == 'POST':
-        grade   = request.form.get('grade')
+        action  = request.form.get('action', 'grade')
         comment = request.form.get('comment', '').strip()
 
-        grade_error = v.validate_grade(grade)
-        if grade_error:
-            flash(grade_error, 'warning')
+        if action == 'revision':
+            # Повернення на доопрацювання — потрібен коментар
+            if not comment:
+                flash('Вкажіть коментар — що саме потрібно доопрацювати.', 'warning')
+            else:
+                return_report_for_revision(practice_id, comment)
+                flash('Звіт повернено студенту на доопрацювання.', 'info')
+                return redirect(url_for('teacher_dashboard'))
         else:
-            grade_report(practice_id, int(grade), comment)
-            flash('Оцінку виставлено!', 'success')
-            return redirect(url_for('teacher_dashboard'))
+            # Виставлення оцінки
+            grade = request.form.get('grade')
+            grade_error = v.validate_grade(grade)
+            if grade_error:
+                flash(grade_error, 'warning')
+            else:
+                grade_report(practice_id, int(grade), comment)
+                flash('Оцінку виставлено!', 'success')
+                return redirect(url_for('teacher_dashboard'))
 
     return render_template('teacher/report.html',
                            practice=practice,
@@ -842,6 +859,46 @@ def upload_avatar():
     return redirect(url_for('my_account'))
 
 
+@app.route('/account/avatar/delete', methods=['POST'])
+@login_required
+def delete_avatar():
+    """Видалення аватарки — повертає першу літеру логіну."""
+    user_id = get_current_user_id()
+    from database import get_user_by_id
+    user = get_user_by_id(user_id)
+
+    # Видаляємо файл з диску якщо він є
+    if user and user['avatar']:
+        old_path = os.path.join(app.config['AVATAR_FOLDER'], user['avatar'])
+        if os.path.exists(old_path):
+            try:
+                os.remove(old_path)
+            except OSError:
+                pass  # якщо не вдалось видалити файл — не критично
+
+    # Очищаємо аватарку в БД та сесії
+    update_user_avatar(user_id, None)
+    session['user_avatar'] = ''
+    flash('Аватарку видалено.', 'info')
+    return redirect(url_for('my_account'))
+
+
+@app.route('/account/avatar/privacy', methods=['POST'])
+@login_required
+def toggle_avatar_privacy():
+    """Перемикає приватність аватарки."""
+    from database import update_avatar_privacy
+    user_id = get_current_user_id()
+    # checkbox: якщо приходить 'on' — приватна, інакше — публічна
+    is_private = request.form.get('avatar_private') == 'on'
+    update_avatar_privacy(user_id, is_private)
+    if is_private:
+        flash('Аватарку приховано від інших користувачів.', 'info')
+    else:
+        flash('Аватарку тепер видно іншим користувачам.', 'success')
+    return redirect(url_for('my_account'))
+
+
 
 # ============================================================
 # ЕКСПОРТ ДАНИХ — EXCEL та PDF
@@ -1049,6 +1106,8 @@ if __name__ == '__main__':
     # Створюємо таблиці при першому запуску
     init_db()
     add_avatar_column()  # Додаємо колонку аватарки якщо ще немає
+    from database import migrate_status_check
+    migrate_status_check()  # Дозволяємо статус 'revision' для наявних баз
 
     # Створюємо адміністратора за замовчуванням (якщо потрібно)
     from database import get_user_by_login, create_user

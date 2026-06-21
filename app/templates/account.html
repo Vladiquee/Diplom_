@@ -29,19 +29,44 @@
             </div>
 
             <form method="POST" action="{{ url_for('upload_avatar') }}"
-                  enctype="multipart/form-data" class="avatar-form">
+                  enctype="multipart/form-data" class="avatar-form" id="avatarForm">
                 <label class="avatar-upload-btn" for="avatarInput">
                     📁 Обрати фото
                 </label>
                 <input type="file" id="avatarInput" name="avatar"
                        accept="image/*" style="display:none;"
                        onchange="previewAvatar(this)">
-                <button type="submit" class="btn btn-primary avatar-save-btn" id="avatarSaveBtn" style="display:none;">
-                    ✅ Зберегти
-                </button>
             </form>
 
+            {% if user.avatar %}
+            <form method="POST" action="{{ url_for('delete_avatar') }}" class="avatar-delete-form">
+                <button type="submit" class="avatar-delete-btn"
+                        onclick="return confirm('Видалити фото? Залишиться перша літера логіну.')">
+                    🗑 Видалити фото
+                </button>
+            </form>
+            {% endif %}
+
             <div class="avatar-hint">PNG, JPG, GIF або WEBP · до 16 МБ</div>
+
+            {% if user.avatar %}
+            <!-- Приватність аватарки -->
+            <form method="POST" action="{{ url_for('toggle_avatar_privacy') }}" class="privacy-form">
+                <label class="privacy-toggle">
+                    <input type="checkbox" name="avatar_private"
+                           onchange="this.form.submit()"
+                           {% if user.avatar_private %}checked{% endif %}>
+                    <span class="privacy-text">🔒 Приховати фото від інших</span>
+                </label>
+                <div class="privacy-hint">
+                    {% if user.avatar_private %}
+                        Зараз фото бачите тільки ви
+                    {% else %}
+                        Зараз фото видно всім користувачам
+                    {% endif %}
+                </div>
+            </form>
+            {% endif %}
 
             <div class="ci-login">{{ user.login }}</div>
             <div class="ci-role">
@@ -184,9 +209,51 @@
         margin-top: 8px;
     }
 
+    .avatar-delete-form { margin-top: 8px; }
+    .avatar-delete-btn {
+        background: none;
+        border: none;
+        color: var(--danger);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+    .avatar-delete-btn:hover {
+        background: rgba(248,113,113,0.1);
+    }
+
     .avatar-hint {
         font-size: 11px; color: var(--text-muted);
         margin-bottom: 14px;
+    }
+
+    .privacy-form {
+        margin-bottom: 14px;
+        padding: 10px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+    }
+    .privacy-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+    }
+    .privacy-toggle input { cursor: pointer; width: 16px; height: 16px; }
+    .privacy-text { user-select: none; }
+    .privacy-hint {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 5px;
+        text-align: left;
+        padding-left: 24px;
     }
 
     .ci-login {
@@ -250,18 +317,11 @@ function togglePass(id) {
 
 function previewAvatar(input) {
     if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const preview = document.getElementById('avatarPreview');
-            const placeholder = document.getElementById('avatarPlaceholder');
-            const saveBtn = document.getElementById('avatarSaveBtn');
-
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-            if (placeholder) placeholder.style.display = 'none';
-            saveBtn.style.display = 'block';
-        };
-        reader.readAsDataURL(input.files[0]);
+        // Одразу відправляємо форму аватарки після вибору файлу
+        const form = document.getElementById('avatarForm');
+        if (form) {
+            form.submit();
+        }
     }
 }
 </script>

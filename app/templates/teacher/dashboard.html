@@ -55,6 +55,25 @@
     </div>
 
     {% if practices %}
+        <!-- Фільтр-перемикач -->
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all" onclick="filterStudents('all', this)">
+                Усі <span class="filter-count">{{ practices | length }}</span>
+            </button>
+            <button class="filter-tab" data-filter="submitted" onclick="filterStudents('submitted', this)">
+                ✏️ Чекають перевірки
+                <span class="filter-count">{{ practices | selectattr('status', 'equalto', 'submitted') | list | length }}</span>
+            </button>
+            <button class="filter-tab" data-filter="graded" onclick="filterStudents('graded', this)">
+                ✅ Оцінені
+                <span class="filter-count">{{ practices | selectattr('status', 'equalto', 'graded') | list | length }}</span>
+            </button>
+            <button class="filter-tab" data-filter="progress" onclick="filterStudents('progress', this)">
+                ⏳ В процесі
+                <span class="filter-count">{{ practices | selectattr('status', 'in', ['assigned', 'in_progress']) | list | length }}</span>
+            </button>
+        </div>
+
         <div class="table-wrap">
             <table>
                 <thead>
@@ -69,9 +88,19 @@
                 </thead>
                 <tbody>
                     {% for p in practices %}
-                    <tr>
+                    <tr class="student-row" data-status="{{ p.status }}">
                         <td>
-                            <div class="student-name">{{ p.student_name }}</div>
+                            <div class="student-cell">
+                                <div class="t-avatar">
+                                    {% if p.student_avatar %}
+                                        <img src="{{ url_for('static', filename='avatars/' + p.student_avatar) }}"
+                                             alt="" class="avatar-photo">
+                                    {% else %}
+                                        {{ p.student_name[0].upper() }}
+                                    {% endif %}
+                                </div>
+                                <div class="student-name">{{ p.student_name }}</div>
+                            </div>
                         </td>
                         <td>
                             <span class="group-badge">{{ p.student_group }}</span>
@@ -86,14 +115,16 @@
                                 {% elif p.status == 'in_progress' %}В процесі
                                 {% elif p.status == 'submitted' %}Звіт здано
                                 {% elif p.status == 'graded' %}Оцінено
+                                {% elif p.status == 'revision' %}Доопрацювання
                                 {% endif %}
                             </span>
                         </td>
                         <td>
-                            {% if p.status == 'submitted' or p.status == 'graded' %}
+                            {% if p.status in ['submitted', 'graded', 'revision'] %}
                                 <a href="{{ url_for('teacher_view_report', practice_id=p.id) }}"
                                    class="btn btn-primary btn-sm">
                                     {% if p.status == 'submitted' %}✏️ Перевірити
+                                    {% elif p.status == 'revision' %}↩️ На доопрацюванні
                                     {% else %}👁 Переглянути{% endif %}
                                 </a>
                             {% else %}
@@ -102,6 +133,11 @@
                         </td>
                     </tr>
                     {% endfor %}
+                    <tr id="emptyFilterRow" style="display:none;">
+                        <td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">
+                            Немає студентів у цій категорії
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -115,6 +151,15 @@
 </div>
 
 <style>
+    .student-cell { display: flex; align-items: center; gap: 10px; }
+    .t-avatar {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), #7c3aed);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+        overflow: hidden;
+    }
+    .avatar-photo { width: 100%; height: 100%; object-fit: cover; }
     .student-name {
         font-weight: 700;
         color: var(--text);
@@ -170,6 +215,48 @@
         height: 240px;
         padding: 8px;
     }
+
+    /* Фільтр-перемикач */
+    .filter-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+    }
+    .filter-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .filter-tab:hover {
+        border-color: var(--accent);
+        color: var(--text);
+    }
+    .filter-tab.active {
+        background: var(--accent-glow);
+        border-color: var(--accent);
+        color: var(--accent-light);
+    }
+    .filter-count {
+        background: rgba(255,255,255,0.08);
+        padding: 1px 7px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .filter-tab.active .filter-count {
+        background: var(--accent);
+        color: #fff;
+    }
 </style>
 
 {% if practices %}
@@ -208,5 +295,41 @@
     });
 </script>
 {% endif %}
+
+<script>
+    // Фільтрація студентів за статусом
+    function filterStudents(filter, btn) {
+        // Перемикаємо активну кнопку
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+
+        const rows = document.querySelectorAll('.student-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const status = row.getAttribute('data-status');
+            let show = false;
+
+            if (filter === 'all') {
+                show = true;
+            } else if (filter === 'submitted') {
+                show = (status === 'submitted');
+            } else if (filter === 'graded') {
+                show = (status === 'graded');
+            } else if (filter === 'progress') {
+                show = (status === 'assigned' || status === 'in_progress');
+            }
+
+            row.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
+        });
+
+        // Показуємо повідомлення якщо нікого немає
+        const emptyRow = document.getElementById('emptyFilterRow');
+        if (emptyRow) {
+            emptyRow.style.display = visibleCount === 0 ? '' : 'none';
+        }
+    }
+</script>
 
 {% endblock %}

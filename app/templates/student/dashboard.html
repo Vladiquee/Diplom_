@@ -16,6 +16,7 @@
             {% elif practice.status == 'in_progress' %}⚙️
             {% elif practice.status == 'submitted' %}📤
             {% elif practice.status == 'graded' %}🏆
+            {% elif practice.status == 'revision' %}↩️
             {% endif %}
         </span>
         <span class="status-bar-text">
@@ -23,6 +24,7 @@
             {% elif practice.status == 'in_progress' %}Практика в процесі — ведіть щоденник
             {% elif practice.status == 'submitted' %}Звіт здано — очікуйте перевірки керівника
             {% elif practice.status == 'graded' %}Практику завершено та оцінено!
+            {% elif practice.status == 'revision' %}Звіт повернено на доопрацювання — виправте та здайте знову
             {% endif %}
         </span>
         <span class="badge badge-{{ practice.status }}">
@@ -30,6 +32,7 @@
             {% elif practice.status == 'in_progress' %}В процесі
             {% elif practice.status == 'submitted' %}Звіт здано
             {% elif practice.status == 'graded' %}Оцінено
+            {% elif practice.status == 'revision' %}Доопрацювання
             {% endif %}
         </span>
     </div>

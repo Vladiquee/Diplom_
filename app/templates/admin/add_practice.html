@@ -69,12 +69,12 @@
                 <div class="form-group">
                     <label class="form-label" for="start_date">Дата початку *</label>
                     <input type="date" id="start_date" name="start_date" class="form-control"
-                           onchange="syncDates()" required>
+                           onchange="syncStartDate()" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="end_date">Дата завершення *</label>
                     <input type="date" id="end_date" name="end_date" class="form-control"
-                           onchange="syncDates()" required>
+                           required>
                 </div>
             </div>
 
@@ -151,22 +151,13 @@
 </style>
 
 <script>
-    // Дата завершення не може бути раніше дати початку
-    function syncDates() {
+    // Дата завершення не може бути раніше дати початку.
+    // Встановлюємо тільки мінімум для поля "кінець" — це не заважає ручному введенню.
+    function syncStartDate() {
         const start = document.getElementById('start_date');
         const end = document.getElementById('end_date');
-
-        // Мінімальна дата для "кінець" = дата початку
         if (start.value) {
             end.min = start.value;
-            // Якщо вже обрана дата кінця раніша — скидаємо
-            if (end.value && end.value < start.value) {
-                end.value = '';
-            }
-        }
-        // Максимальна дата для "початок" = дата кінця
-        if (end.value) {
-            start.max = end.value;
         }
     }
 </script>
